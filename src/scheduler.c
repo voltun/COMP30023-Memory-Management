@@ -28,7 +28,7 @@ int main(int argc, char **argv)
     FILE *file;
     
     struct process_t *curr_process_list = NULL;
-    struct process_t *incoming_processes = NULL;
+    struct process_t *incoming_processes = malloc(sizeof(struct process_t));
     int cpu_clock = 0;
 
     //Read input and params from CL arguments
@@ -76,20 +76,57 @@ int main(int argc, char **argv)
     }
 
     //Init all processes into linked list for better simulation
-    get_all_processes(file, incoming_processes);
-
-    fclose(file);
+    incoming_processes = get_all_processes(file);
 
     //Start CPU simulation
-    // while(1)
-    // {
-    //     //Checks if cpu_clock corresponds to a newly arrived process
-    //     if (has_process_arrived(cpu_clock, incoming_processes, curr_process_list))
-    //     {
+    while(1)
+    {
+        printf("CLOCK: %d\n", cpu_clock);
+        //Run first process at time 0
+        if (cpu_clock == 0)
+        {
+            curr_process_list = malloc(sizeof(struct process_t));
+            
+            if(!curr_process_list)
+            {
+                fprintf(stderr, "Malloc failed!\n");
+                exit(1);
+            }
 
-    //     }
+            curr_process_list = list_pop(&incoming_processes);
+        }
 
-    // }
+        //Checks if cpu_clock corresponds to a newly arrived process, adds to processing queue
+        //if matches
+        if (incoming_processes && has_process_arrived(cpu_clock, incoming_processes))
+        {
+            printf("HI\n");
+            while(incoming_processes && cpu_clock == incoming_processes->arrival_time)
+            {
+                curr_process_list = list_push(curr_process_list, list_pop(&incoming_processes));
+                
+            }
+            printf("Time: %d, running process: %d\n", cpu_clock, curr_process_list->pid);
+        }
+        printf("MASTER: \n");
+        print_list(incoming_processes);
+        printf("RUNNING: \n");
+        print_list(curr_process_list);
+        
+        //Rearrange currently running processes based on scheduling algorithm
+
+        //Run process
+        execute_process(cpu_clock, &curr_process_list);
+
+        //If no more processes to run, stop simulation.
+        if (!incoming_processes && !curr_process_list)
+        {
+            break;
+        }
+      
+        //Increment cpu clock
+        cpu_clock += 1;
+    }
 
     return 0;
 }

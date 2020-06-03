@@ -19,5 +19,8 @@ void print_memory_evict() {}
 /*
 Prints out the transcript as listed in project specs for FINISHED
 */
-void print_process_finish() {}
+void print_process_finish(int cpu_clock, struct process_t *process) 
+{
+    printf("%d, FINISHED, id=%d, proc-remaining=%d\n", cpu_clock, process->pid, count_processes(process)-1);
+}
 

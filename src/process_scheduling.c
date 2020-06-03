@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "../include/utilities.h"
 
 #define SIZE_BUFFER 256
 
@@ -16,8 +18,20 @@ typedef struct process_t
 } process_t;
 
 struct process_t *get_next_process(FILE *fptr);
-struct process_t *list_pop(struct process_t *list);
-void list_append(struct process_t *list, struct process_t *item);
+struct process_t *list_pop(struct process_t **);
+
+
+
+void print_list(struct process_t *list)
+{
+    struct process_t *curr = list;
+    while(curr != NULL)
+    {
+        printf("NEW process: %d %d %d %d\n", curr->arrival_time, curr->pid, curr->memory_required, curr->time_required);
+        curr = curr->next;
+    }
+    printf("\n\n");
+}
 
 /*
 Creates a new process linked list head of type process_t
@@ -44,57 +58,20 @@ struct process_t *create_process(int pid, int arrival, int mem_needed, int time_
     new_p->arrival_time = arrival;
     new_p->memory_required = mem_needed;
     new_p->time_required = time_to_fin;
+    new_p->curr_runtime = 0;
     new_p->next = NULL;
 
     return new_p; 
 }
 
 /*
-Gets next process from the input file
+Traverse to the last element of a linked list
 @params
-fptr, FILE *, the file pointer of the input file
+list, struct process_t *, the linked list of processes
 
 @return
-NULL, if EOF for the file has already been reached
-a process_t struct of the new process read
+a struct process_t * of last process
 */
-struct process_t *get_next_process(FILE *fptr)
-{
-    char c;
-    int n = 0;
-    int time, pid, mem, time_fin;
-    int is_EOF = 1;
-    char *buffer = (char *)malloc(sizeof(char)* SIZE_BUFFER);
-
-    while (1)
-    {
-        c = getc(fptr);
-
-        //returns NULL if file has already reached EOF
-        if (is_EOF && c == EOF)
-        {
-            return NULL;
-        }
-
-        //If a newline or EOF is reached, process the entire line as ARRIVAL_TIME, PID, MEM_REQ, TIME_REQ
-        if (c != '\n' && c != EOF)
-        {
-            buffer[n] = c;
-            n ++;
-            is_EOF = 0;
-        }
-        else
-        {
-            buffer[n] = '\0';
-            sscanf(buffer, "%d %d %d %d", &time, &pid, &mem, &time_fin);
-            printf("%d %d %d %d\n", time, pid, mem, time_fin);
-            
-            return create_process(pid, time, mem, time_fin);
-        }
-        
-    }
-}
-
 struct process_t *get_last_process(struct process_t *list)
 {
     struct process_t *curr = list;
@@ -108,36 +85,79 @@ struct process_t *get_last_process(struct process_t *list)
 }
 
 /*
+Counts the number of processes in a linked list
+@params
+list, struct process_t *, the linked list
+
+@return
+int, number of processes in linked list
+*/
+int count_processes(struct process_t *list)
+{
+    struct process_t *curr = list;
+    int n = 1;
+
+    //Returns 0 for empty list and 1 for singleton list
+    if (!list)
+    {
+        return 0;
+    }
+    else if (list->next == NULL)
+    {
+        return n;
+    }
+
+    while(curr->next != NULL)
+    {
+        n += 1;
+        curr = curr->next;
+    }
+    return n;
+}
+
+/*
 Translates all process entries in the input file into process_t linked lists
 !! FOR USE IN POPPING PROCESSES WHEN CPU CLOCK CORRESPONDS TO ARRIVAL TIME
 !! WHEN RUNNING SIMULATION
 @params
 fptr, FILE *, the input file
-list, struct process_t *, the head of a process_t linked list
+
+@return
+head struct pointer of type struct process_t * for linked list
 */
-void get_all_processes(FILE *fptr, struct process_t *list)
+struct process_t *get_all_processes(FILE *fptr)
 {
-    struct process_t *curr = list;
+    struct process_t *head = malloc(sizeof(struct process_t));
+    struct process_t *curr = NULL;
+    struct process_t *new_process = NULL;
+    int time = 0, pid = 0, mem = 0, time_fin = 0, is_head = 1;
 
-    while (1)
+    while (fscanf(fptr, "%d %d %d %d ", &time, &pid, &mem, &time_fin) == 4)
     {
-        //Init the linked list if head is null
-        if (curr == NULL)
+        //Add first element into head
+        if (is_head)
         {
-            curr = get_next_process(fptr);
+            new_process = malloc(sizeof(struct process_t));
+            new_process = create_process(pid, time, mem, time_fin);
+            head = new_process;
+            curr = head;
+            is_head = 0;
             continue;
-        }
-
-        curr = curr->next;
-        curr = get_next_process(fptr);
-
-        //Check if file reached EOF
-        if (curr == NULL)
+        }   
+        
+        //Iterate to end of list
+        while (curr->next != NULL)
         {
-            return;
+            curr = curr->next;
         }
-
+        
+        //Append new process to end
+        new_process = create_process(pid, time, mem, time_fin);
+        curr->next = new_process;
     }
+
+    fclose(fptr);
+    return head;
 }
 
 /*
@@ -152,17 +172,54 @@ curr_processes, struct process_t *, the linked list of current processes queued 
 @return
 an int, 0 if no new process arrival corresponds to cpu_clock, 1 if new processes added
 */
-int has_process_arrived(int cpu_clock, struct process_t *master, struct process_t *curr_processes)
+int has_process_arrived(int cpu_clock, struct process_t *master)
 {
-    struct process_t *last = NULL;
-
-    //A new process has arrived
-    if (cpu_clock == master->arrival_time)
+    //If no new process corresponds to the cpu clock
+    if (cpu_clock != master->arrival_time)
     {
-        list_append(curr_processes, list_pop(master));
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+// struct process_t *sort_pid(struct process_t **list)
+// {
+//     struct process_t *curr = list;
+
+//     //If list has 0 or 1 element only
+//     if ((list == NULL) || (list->next == NULL))
+//     {
+//         return;
+//     }
+
+//     if (curr->next->pid > curr->pid)
+//     {
+//         struct process_t *temp = curr->next;
+
+//     }
+//     while(curr->next != NULL)
+//     {
+
+//     }
+// }
+
+void execute_process(int cpu_clock, struct process_t **list)
+{
+    (*list)->time_required -= 1;
+
+    if ((*list)->time_required <= 0)
+    {
+        struct process_t *junk;
+        print_process_finish(cpu_clock, *list);
+
+        junk = list_pop(list);
+        free(junk);
     }
 
-    return 0;
+
 }
 
 /*
@@ -173,11 +230,21 @@ list, struct process_t *, a linked list
 @return
 a struct process_t *, the popped item from linked list
 */
-struct process_t *list_pop(struct process_t *list)
+struct process_t *list_pop(struct process_t **list)
 {
-    struct process_t *temp = list;
 
-    list = list->next;
+    struct process_t *temp = *list;
+
+    if (temp)
+    {
+        *list = temp->next;
+    }
+    else
+    {
+        return NULL;
+    }
+
+    temp->next = NULL;
 
     return temp;
 }
@@ -188,9 +255,20 @@ Appends a process to the end of a linked list
 list, struct process_t *, the linked list to append to
 item, struct process_t *, the process to append
 */
-void list_append(struct process_t *list, struct process_t *item)
+struct process_t *list_push(struct process_t *list, struct process_t *item)
 {
-    struct process_t *last = get_last_process(list);
+    struct process_t *temp = malloc(sizeof(struct process_t));
+    struct process_t *curr = list;
+    
+    temp = item;
+    
+    while (curr->next != NULL)
+    {
+        curr = curr->next;
+    }
+    
+    curr->next = temp;
 
-    last->next = item;
+    return list;
+
 }
