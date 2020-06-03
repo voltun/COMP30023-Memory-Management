@@ -1,5 +1,5 @@
-CC=gcc
-CFLAGS=-Wall -Wextra -std=gnu99
+CC=gcc 
+CFLAGS=-Wall -Wextra -lm -std=gnu99
 OBJ=scheduler.o utilities.o memory.o process_scheduling.o
 EXE=scheduler
 

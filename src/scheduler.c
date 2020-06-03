@@ -30,10 +30,12 @@ int main(int argc, char **argv)
     int quantum = 0, quantum_clock = 0;
     FILE *file;
     
+    struct datalog_t *log = NULL;
     struct process_t *curr_process_list = NULL;
     struct process_t *incoming_processes = malloc(sizeof(struct process_t));
     int cpu_clock = 0;
 
+    log = init_datalog();
     //Read input and params from CL arguments
     for (int i=1; i < argc; i++) 
     {
@@ -102,6 +104,19 @@ int main(int argc, char **argv)
         //If a process finished running from last tick, print RUNNING transcript now
         if (fin_flag && curr_process_list)
         {
+            struct process_t *junk;
+            curr_process_list->time_finished = cpu_clock;
+            print_process_finish(cpu_clock, curr_process_list);
+
+            junk = list_pop(&curr_process_list);
+            add_fin_process(log, junk);
+            
+            //If no more processes to run, stop simulation.
+            if (!incoming_processes && !curr_process_list)
+            {
+                print_performance_stats(cpu_clock, log);
+                break;
+            }
             print_process_run(cpu_clock, mem_alloc, mem_usage, curr_process_list);
             fin_flag = 0; 
             quantum_clock = quantum;        
@@ -142,6 +157,7 @@ int main(int argc, char **argv)
                 curr_process_list = list_push(curr_process_list, list_pop(&incoming_processes));              
             }
         }
+        
         // printf("MASTER: \n");
         // print_list(incoming_processes);
         // printf("RUNNING: \n");
@@ -164,15 +180,9 @@ int main(int argc, char **argv)
             }
         }
 
-        //Run process, decrement time remaining and print appropriate transcripts
-        fin_flag = execute_process(cpu_clock, &curr_process_list);
-     
-        //If no more processes to run, stop simulation.
-        if (!incoming_processes && !curr_process_list)
-        {
-            break;
-        }
-      
+        //Run process, and adds finished process for performance stats
+        fin_flag = execute_process(&curr_process_list);
+        
         //Update clocks and timers
         cpu_clock += 1;
     }

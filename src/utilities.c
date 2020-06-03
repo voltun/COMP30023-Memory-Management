@@ -1,12 +1,60 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "../include/process_scheduling.h"
+#include "../include/utilities.h"
 
 #define UNLIMITED_MEMORY "u"
 
 /*
+initialises the datalog
+@return
+struct datalog *, the initialised datalog
+*/
+struct datalog_t *init_datalog()
+{
+    struct datalog_t *log = malloc(sizeof(struct datalog_t));
+
+    log->n_proc_fin = 0;
+    log->finished_process = NULL;
+
+    return log;
+}
+
+/*
+Updates finished process' stats into the log
+@params
+log, struct datalog_t *, the datalog struct
+process, struct datalog_t *, the finished process
+
+@return
+stuct datalog_t *, the updated log
+*/
+struct datalog_t *add_fin_process(struct datalog_t *log, struct process_t *process)
+{
+    struct process_t *curr = log->finished_process;
+    log->n_proc_fin += 1;
+
+    if (log->finished_process == NULL)
+    {
+        log->finished_process = process;
+        return log;
+    }
+
+    while (curr->next != NULL)
+    {
+        curr = curr-> next;
+    }
+
+    curr->next = process;
+
+    return log;
+}
+
+/*
 Prints out the transcript as listed in project specs for RUNNING
+!! Usable for both Unlimited Memory and Limited Memory
 @params
 cpu_clock, int, representation of CPU clock in Seconds
 mem_option, char *, parameter of memory allocation, as in spec
@@ -29,14 +77,49 @@ void print_process_run(int cpu_clock, char *mem_option, int mem_usage, struct pr
 
 /*
 Prints out the transcript as listed in project specs for EVICTED 
+@params
+cpu_clock, int, representation of CPU clock in Seconds
+mem_address, TODO
+n_mem_addr, TODO
 */
-void print_memory_evict() {}
+void print_memory_evict(int cpu_clock, int *mem_address, int n_mem_addr) 
+{
+    printf("%d, EVICTED, mem-addresses=[%d", cpu_clock, mem_address[0]);
+    for (int i = 1; i < n_mem_addr; i++)
+    {
+        printf(", %d", mem_address[i]);
+    }
+    printf("\n");
+}
 
 /*
 Prints out the transcript as listed in project specs for FINISHED
+@params
+cpu_clock, int, representation of CPU clock in Seconds
+process, struct process_t *, the process linked list, prints first element only
 */
 void print_process_finish(int cpu_clock, struct process_t *process) 
 {
     printf("%d, FINISHED, id=%d, proc-remaining=%d\n", cpu_clock, process->pid, count_processes(process)-1);
+}
+
+void print_performance_stats(int cpu_clock, struct datalog_t *log)
+{
+    double sum_for_turnaround = 0.0;
+    int turnaround = 0;
+
+    //Calculating turnaround time
+    for (struct process_t *curr = log->finished_process; curr != NULL; curr=curr->next)
+    {
+        sum_for_turnaround += (curr->time_finished - curr->arrival_time);
+    }
+
+    sum_for_turnaround /= log->n_proc_fin;
+    turnaround = ceil(sum_for_turnaround);
+
+    printf("Throughput %d, %d, %d\n", -1, -1, -1);
+    printf("Turnaround time %d\n", turnaround);
+    printf("Time overhead %2f %2f\n", -1.0, -1.0);
+    printf("Makespan %d\n", cpu_clock);
 }
 

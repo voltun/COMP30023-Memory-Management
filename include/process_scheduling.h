@@ -7,7 +7,7 @@ typedef struct process_t
     int arrival_time;
     int memory_required;
     int time_required;
-    int curr_runtime;
+    int time_finished;
 
     struct process_t *next;
 
@@ -23,7 +23,7 @@ int has_process_arrived(int, struct process_t *);
 struct process_t *list_push(struct process_t *, struct process_t *);
 struct process_t *list_pop(struct process_t **);
 int count_processes(struct process_t *);
-int execute_process(int, struct process_t **);
+int execute_process(struct process_t **);
 struct process_t *round_robin_shuffle(struct process_t *);
 
 #endif

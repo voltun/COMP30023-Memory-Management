@@ -15,7 +15,7 @@ void print_list(struct process_t *list)
     struct process_t *curr = list;
     while(curr != NULL)
     {
-        printf("NEW process: %d %d %d %d\n", curr->arrival_time, curr->pid, curr->memory_required, curr->time_required);
+        printf("NEW process: %d %d %d %d %d\n", curr->arrival_time, curr->pid, curr->memory_required, curr->time_required, curr->time_finished);
         curr = curr->next;
     }
     printf("\n\n");
@@ -46,7 +46,7 @@ struct process_t *create_process(int pid, int arrival, int mem_needed, int time_
     new_p->arrival_time = arrival;
     new_p->memory_required = mem_needed;
     new_p->time_required = time_to_fin;
-    new_p->curr_runtime = 0;
+    new_p->time_finished = 0;
     new_p->next = NULL;
 
     return new_p; 
@@ -219,26 +219,18 @@ struct process_t *round_robin_shuffle(struct process_t *list)
 
 /*
 Decrement time remaining for process to use CPU.
-Removes process if CPU time used up
 @params
-cpu_clock, int, representation of CPU clock in seconds
 list, struct process_t **, pointer to the process_t linked list
 
 @return
 int, 1 if a process finished executing, else 0
 */
-int execute_process(int cpu_clock, struct process_t **list)
+int execute_process(struct process_t **list)
 {
     (*list)->time_required -= 1;
 
     if ((*list)->time_required <= 0)
     {
-        struct process_t *junk;
-        print_process_finish(cpu_clock, *list);
-
-        junk = list_pop(list);
-        free(junk);
-
         return 1;
     }
     return 0;
