@@ -5,18 +5,6 @@
 
 #define SIZE_BUFFER 256
 
-typedef struct process_t
-{
-    int pid;
-    int arrival_time;
-    int memory_required;
-    int time_required;
-    int curr_runtime;
-
-    struct process_t *next;
-
-} process_t;
-
 struct process_t *get_next_process(FILE *fptr);
 struct process_t *list_pop(struct process_t **);
 
@@ -185,28 +173,61 @@ int has_process_arrived(int cpu_clock, struct process_t *master)
     }
 }
 
-// struct process_t *sort_pid(struct process_t **list)
-// {
-//     struct process_t *curr = list;
+/*
+Shuffles the process list as per Round-Robin scheduling
+@params
+list, struct process_t *, linked list of processes 
 
-//     //If list has 0 or 1 element only
-//     if ((list == NULL) || (list->next == NULL))
-//     {
-//         return;
-//     }
+@return
+struct process_t *, the new linked list after round robin
+*/
+struct process_t *round_robin_shuffle(struct process_t *list)
+{
+    
+    struct process_t *new_head = NULL;
+    struct process_t *temp = NULL;
+    struct process_t *end = list;
 
-//     if (curr->next->pid > curr->pid)
-//     {
-//         struct process_t *temp = curr->next;
+    //Returns if empty list
+    if(!list)
+    {
+        return NULL;
+    }
 
-//     }
-//     while(curr->next != NULL)
-//     {
+    //Case for singleton list
+    if (list->next == NULL)
+    {
+        return list;
+    }
 
-//     }
-// }
+    //Store 2nd element as the new head
+    new_head = list->next;
+    temp = new_head;
+    
+    //Iterate to the end of linked list
+    while (temp->next != NULL)
+    {
+        temp = temp->next;
+    }
 
-void execute_process(int cpu_clock, struct process_t **list)
+    //Insert old list head at the end of list
+    temp->next = end;
+    temp->next->next = NULL;
+
+    return new_head;
+}
+
+/*
+Decrement time remaining for process to use CPU.
+Removes process if CPU time used up
+@params
+cpu_clock, int, representation of CPU clock in seconds
+list, struct process_t **, pointer to the process_t linked list
+
+@return
+int, 1 if a process finished executing, else 0
+*/
+int execute_process(int cpu_clock, struct process_t **list)
 {
     (*list)->time_required -= 1;
 
@@ -217,8 +238,10 @@ void execute_process(int cpu_clock, struct process_t **list)
 
         junk = list_pop(list);
         free(junk);
-    }
 
+        return 1;
+    }
+    return 0;
 
 }
 
@@ -251,6 +274,8 @@ struct process_t *list_pop(struct process_t **list)
 
 /*
 Appends a process to the end of a linked list
+!! Appends before end of list if multiple processes with same arrival time
+!! (sorts on ascending pid order)
 @params
 list, struct process_t *, the linked list to append to
 item, struct process_t *, the process to append
@@ -262,8 +287,33 @@ struct process_t *list_push(struct process_t *list, struct process_t *item)
     
     temp = item;
     
+    //Inserts in ascending order of pid if more than 1 process arrived at 
+    //the same time. Compares arrival time of an element already in the 
+    //linked list and its subsequent process' pid (For case of 1 element)
+    if (temp->arrival_time == curr->arrival_time && curr->next == NULL)
+    {
+        if (temp->pid < curr->pid)
+        {
+            temp->next = curr;
+            return temp;
+        }
+    }
+
     while (curr->next != NULL)
     {
+        //Inserts in ascending order of pid if more than 1 process arrived at 
+        //the same time. Compares arrival time of an element already in the 
+        //linked list and its subsequent process' pid
+        if (temp->arrival_time == curr->next->arrival_time && curr->next->pid > temp->pid)
+        {
+            struct process_t *node = NULL;
+            node = curr->next;
+
+            curr->next = temp;
+            temp-> next = node;
+
+            return list;
+        }
         curr = curr->next;
     }
     

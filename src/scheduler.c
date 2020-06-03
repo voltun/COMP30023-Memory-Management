@@ -11,6 +11,8 @@
 #define PARAM_MEMALLOC "-m"
 #define PARAM_MEMSIZE "-s"
 #define PARAM_QUANTUM "-q"
+#define ALGO_ROUNDROBIN "rr"
+#define ALGO_FCOME_FSERVED "ff"
 
 #define SIZE_INPUTFILE 1000
 #define SIZE_ALGO 3
@@ -23,8 +25,9 @@ int main(int argc, char **argv)
     char input_file[SIZE_INPUTFILE];
     char sched_algo[SIZE_ALGO];
     char mem_alloc[SIZE_MEMALLOC];
-    int mem_size = 0;
-    int quantum = 0;
+    int mem_size = 0, mem_usage = 0, fin_flag = 0;
+    int algo_cs_flag = 0, algo_ff_flag = 0, algo_rr_flag = 0;
+    int quantum = 0, quantum_clock = 0;
     FILE *file;
     
     struct process_t *curr_process_list = NULL;
@@ -43,6 +46,18 @@ int main(int argc, char **argv)
         //Checks if CL param is scheduling algorithm
         else if (strcmp(argv[i], PARAM_ALGO) == 0)
         {
+            if (strcmp(argv[i+1], ALGO_FCOME_FSERVED) == 0)
+            {
+                algo_ff_flag = 1;
+            }
+            else if (strcmp(argv[i+1], ALGO_ROUNDROBIN) == 0)
+            {
+                algo_rr_flag = 1;
+            }
+            else
+            {
+                algo_cs_flag = 1;
+            }
             strncpy(sched_algo, argv[i+1], strlen(argv[i+1])+1);
             sched_algo[strlen(argv[i+1])] = '\0';
         }
@@ -61,6 +76,7 @@ int main(int argc, char **argv)
         else if (strcmp(argv[i], PARAM_QUANTUM) == 0)
         {
             quantum = atoi(argv[i+1]);
+            quantum_clock = quantum;
         }
         else
         {
@@ -81,7 +97,22 @@ int main(int argc, char **argv)
     //Start CPU simulation
     while(1)
     {
-        printf("CLOCK: %d\n", cpu_clock);
+        // printf("CLOCK: %d\n", cpu_clock);
+
+        //If a process finished running from last tick, print RUNNING transcript now
+        if (fin_flag && curr_process_list)
+        {
+            print_process_run(cpu_clock, mem_alloc, mem_usage, curr_process_list);
+            fin_flag = 0; 
+            quantum_clock = quantum;        
+        }
+
+        //Book keeping if using Round Robin algortihm
+        if (algo_rr_flag)
+        {
+
+        }
+
         //Run first process at time 0
         if (cpu_clock == 0)
         {
@@ -94,37 +125,55 @@ int main(int argc, char **argv)
             }
 
             curr_process_list = list_pop(&incoming_processes);
+            //To sort pid if at time 0 has > 1 processes arriving
+            while(incoming_processes && cpu_clock == incoming_processes->arrival_time)
+            {
+                curr_process_list = list_push(curr_process_list, list_pop(&incoming_processes));              
+            }
+            print_process_run(cpu_clock, mem_alloc, mem_usage, curr_process_list);
         }
 
         //Checks if cpu_clock corresponds to a newly arrived process, adds to processing queue
         //if matches
         if (incoming_processes && has_process_arrived(cpu_clock, incoming_processes))
         {
-            printf("HI\n");
             while(incoming_processes && cpu_clock == incoming_processes->arrival_time)
             {
-                curr_process_list = list_push(curr_process_list, list_pop(&incoming_processes));
-                
+                curr_process_list = list_push(curr_process_list, list_pop(&incoming_processes));              
             }
-            printf("Time: %d, running process: %d\n", cpu_clock, curr_process_list->pid);
         }
-        printf("MASTER: \n");
-        print_list(incoming_processes);
-        printf("RUNNING: \n");
-        print_list(curr_process_list);
+        // printf("MASTER: \n");
+        // print_list(incoming_processes);
+        // printf("RUNNING: \n");
+        // print_list(curr_process_list);
         
         //Rearrange currently running processes based on scheduling algorithm
+        //ROUND ROBIN SCHEDULING
+        if (algo_rr_flag)
+        {
+            //Update quantum time
+            if (quantum_clock > 0)
+            {
+                quantum_clock -= 1;
+            }
+            else
+            {
+                quantum_clock = quantum;
+                curr_process_list = round_robin_shuffle(curr_process_list);
+                print_process_run(cpu_clock, mem_alloc, mem_usage, curr_process_list);
+            }
+        }
 
-        //Run process
-        execute_process(cpu_clock, &curr_process_list);
-
+        //Run process, decrement time remaining and print appropriate transcripts
+        fin_flag = execute_process(cpu_clock, &curr_process_list);
+     
         //If no more processes to run, stop simulation.
         if (!incoming_processes && !curr_process_list)
         {
             break;
         }
       
-        //Increment cpu clock
+        //Update clocks and timers
         cpu_clock += 1;
     }
 

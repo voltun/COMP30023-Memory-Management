@@ -23,6 +23,7 @@ int has_process_arrived(int, struct process_t *);
 struct process_t *list_push(struct process_t *, struct process_t *);
 struct process_t *list_pop(struct process_t **);
 int count_processes(struct process_t *);
-void execute_process(int, struct process_t **);
+int execute_process(int, struct process_t **);
+struct process_t *round_robin_shuffle(struct process_t *);
 
 #endif
