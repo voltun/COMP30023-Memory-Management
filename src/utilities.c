@@ -213,7 +213,6 @@ uint32_t *get_throughput(struct datalog_t *log, uint32_t cpu_clock)
     //Calculate number of processes for each interval
     for (struct process_t *curr = log->finished_process; curr != NULL; curr=curr->next)
     {
-        printf("FIN: %"PRIu32"\n", curr->time_finished);
         index = ((uint32_t) floor((curr->time_finished - 1) / THROUGHPUT_INTERVAL));
         
         interval_list[index] += 1;
