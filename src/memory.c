@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <math.h>
 #include <inttypes.h>
 #include "../include/memory.h"
 #include "../include/utilities.h"
@@ -12,6 +13,7 @@ uint32_t count_unused_mem(struct memory_t *memory);
 uint32_t *add_into_memory(struct memory_t **memory, uint32_t pid, uint32_t pages, uint32_t *mem_addr);
 uint32_t *evict_from_memory(struct memory_t **memory, uint32_t pid);
 struct process_t *find_evictee_lru(struct memory_t *memory);
+void update_mem_usage(struct memory_t **memory);
 
 /*
 Initialises the memory_t struct, representation of main memory
@@ -35,6 +37,7 @@ struct memory_t *init_memory(uint32_t mem_size, uint32_t n_max_pid)
     }
     mem->n_total_pages = mem_size / SIZE_PER_MEM_PAGE;
     mem->n_total_proc = n_max_pid;
+    mem->mem_usage = 0;
     mem->pid_loaded = create_uint32_array(n_max_pid, UINT32_MAX);
     
     // if (!(mem->process_loaded))
@@ -175,26 +178,8 @@ uint32_t *, array of allocated memory addresses
 */
 uint32_t *add_into_memory(struct memory_t **memory, uint32_t pid, uint32_t pages, uint32_t *mem_addr)
 {
-    // struct process_t *dup = malloc(sizeof(process_t));
     uint32_t n = 0;
 
-    // if (!dup)
-    // {
-    //     fprintf(stderr, "Malloc failed!\n");
-    //     exit(1);
-    // }
-
-    // dup = process;
-    // dup->next = NULL;
-    
-    // //Stores duplicate process info for better book keeping
-    // struct process_t *curr = get_last_process((*memory)->process_loaded);
-    // curr->next = dup;
-    // printf("HEHE\n");
-    // (*memory)->process_loaded = list_push((*memory)->process_loaded, dup);
-
-    // print_list((*memory)->process_loaded);
-    
     //Insert pages into memory
     for (uint32_t i = 0; i < (*memory)->n_total_pages; i++)
     {
@@ -214,6 +199,21 @@ uint32_t *add_into_memory(struct memory_t **memory, uint32_t pid, uint32_t pages
             break;
         }
     }
+
+    update_mem_usage(memory);
     
     return mem_addr;
+}
+
+void update_mem_usage(struct memory_t **memory)
+{
+    int free_space = 0;
+    float usage = 0.0f;
+    int total = (int) (*memory)->n_total_pages;
+
+    free_space = (int) count_unused_mem(*memory);
+    
+    usage = 100.0 - ceil( (((float)free_space) / ((float)total)) * 100.0);
+    
+    (*memory)->mem_usage = usage;
 }

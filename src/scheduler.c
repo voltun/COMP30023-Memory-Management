@@ -140,7 +140,7 @@ int main(int argc, char **argv)
                 curr_process_list->memory_address = memory_addr;
             }
 
-            print_process_run(cpu_clock, mem_alloc, load_penalty, mem_usage, memory->n_total_pages, curr_process_list);
+            print_process_run(cpu_clock, mem_alloc, load_penalty, memory->mem_usage, memory->n_total_pages, curr_process_list);
 
             
             fin_flag = 0; 
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
                 load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required, memory_addr);
                 curr_process_list->memory_address = memory_addr;
             }
-            print_process_run(cpu_clock, mem_alloc, load_penalty, mem_usage, memory->n_total_pages, curr_process_list);
+            print_process_run(cpu_clock, mem_alloc, load_penalty, memory->mem_usage, memory->n_total_pages, curr_process_list);
         }
           
         //Checks if cpu_clock corresponds to a newly arrived process, adds to processing queue
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
                 quantum_clock = quantum - 1;
                 curr_process_list = round_robin_shuffle(curr_process_list);
                 
-                print_process_run(cpu_clock, mem_alloc, load_penalty, mem_usage, memory->n_total_pages, curr_process_list);
+                print_process_run(cpu_clock, mem_alloc, load_penalty, memory->mem_usage, memory->n_total_pages, curr_process_list);
                 //Loads memory and calculate loading time penalty if not in Unlimited
                 //Memory mode
                 

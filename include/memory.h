@@ -11,6 +11,7 @@ typedef struct memory_t
     uint32_t n_total_pages;
     uint32_t *pid_loaded;
     uint32_t *main_memory;
+    int mem_usage;
     
 } memory_t;
 
