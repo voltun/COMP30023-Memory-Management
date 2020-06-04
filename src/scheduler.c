@@ -16,6 +16,7 @@
 #define ALGO_FCOME_FSERVED "ff"
 #define ALGO_CUSTOM "cs"
 #define MEM_SWAPPING_X "p"
+#define MEM_UNLIMITED "u"
 #define MEM_VIRTUAL_MEM "v"
 #define MEM_CUSTOM "cm"
 
@@ -24,6 +25,7 @@
 #define SIZE_MEMALLOC 3
 #define SIZE_BUFFER 256
 #define SIZE_PROCESSES 100
+#define SIZE_PER_MEM_PAGE 4
 
 int main(int argc, char **argv) 
 {
@@ -33,13 +35,16 @@ int main(int argc, char **argv)
     uint32_t mem_size = 0;
     int mem_usage = 0, fin_flag = 0;
     int algo_cs_flag = 0, algo_ff_flag = 0, algo_rr_flag = 0;
+    int mem_u_flag = 0, mem_p_flag = 0, mem_v_flag = 0, mem_cm_flag = 0;
     int quantum = 0, quantum_clock = 0;
     FILE *file;
     
     struct datalog_t *log = NULL;
     struct process_t *curr_process_list = NULL;
     struct process_t *incoming_processes = malloc(sizeof(struct process_t));
-    uint32_t cpu_clock = 0;
+    struct memory_t *memory = NULL;
+    uint32_t *memory_addr = NULL, *evict_addr = NULL;
+    uint32_t cpu_clock = 0, load_penalty = 0;
 
     log = init_datalog();
     //Read input and params from CL arguments
@@ -72,13 +77,29 @@ int main(int argc, char **argv)
         //Checks if CL param is memory allocation
         else if (strcmp(argv[i], PARAM_MEMALLOC) == 0)
         {
+            if (strcmp(argv[i+1], MEM_SWAPPING_X) == 0)
+            {
+                mem_p_flag = 1;
+            }
+            else if (strcmp(argv[i+1], MEM_UNLIMITED) == 0)
+            {
+                mem_u_flag = 1;
+            }
+            else if (strcmp(argv[i+1], MEM_VIRTUAL_MEM) == 0)
+            {
+                mem_v_flag = 1;
+            }
+            else
+            {
+                mem_cm_flag = 1;
+            }
             strncpy(mem_alloc, argv[i+1], strlen(argv[i+1])+1);
             mem_alloc[strlen(argv[i+1])] = '\0';
         }
         //Checks if CL param is memory size
         else if (strcmp(argv[i], PARAM_MEMSIZE) == 0)
         {
-            mem_size = atoi(argv[i+1]);
+            sscanf(argv[i+1], "%"SCNd32, &mem_size);
         }
         //Checks if CL param is quantum
         else if (strcmp(argv[i], PARAM_QUANTUM) == 0)
@@ -91,6 +112,9 @@ int main(int argc, char **argv)
             continue;
         }
     }
+
+    memory = init_memory(mem_size, SIZE_PROCESSES);
+    
 
     //Reads from the stated file_input
     if ((file = fopen(input_file, "r")) == NULL)
@@ -112,26 +136,42 @@ int main(int argc, char **argv)
         {
             struct process_t *junk;
             curr_process_list->time_finished = cpu_clock;
+            
+            //Handles memory eviction if not in unlimited memory mode
+            if (!mem_u_flag)
+            {
+                evict_addr = create_uint32_array(memory->n_total_pages, UINT32_MAX);
+                evict_addr = evict_from_memory(&memory, curr_process_list->pid);
+                print_memory_evict(cpu_clock, evict_addr, memory->n_total_pages);
+                free(evict_addr);
+            }
             print_process_finish(cpu_clock, curr_process_list);
-
             junk = list_pop(&curr_process_list);
+            //For performance statistics
             add_fin_process(log, junk);
             
             //If no more processes to run, stop simulation.
             if (!incoming_processes && !curr_process_list)
             {
+
                 print_performance_stats(cpu_clock, log);
                 break;
             }
-            print_process_run(cpu_clock, mem_alloc, mem_usage, curr_process_list);
+            
+            //Loads memory and calculate loading time penalty if not in Unlimited
+            //Memory mode
+            if (!mem_u_flag)
+            {
+                memory_addr = create_uint32_array(memory->n_total_pages, UINT32_MAX);
+                load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required, memory_addr);
+                curr_process_list->memory_address = memory_addr;
+            }
+
+            print_process_run(cpu_clock, mem_u_flag, load_penalty, mem_usage, memory->n_total_pages, curr_process_list);
+
+            
             fin_flag = 0; 
             quantum_clock = quantum;        
-        }
-
-        //Book keeping if using Round Robin algortihm
-        if (algo_rr_flag)
-        {
-
         }
 
         //Run first process at time 0
@@ -151,7 +191,16 @@ int main(int argc, char **argv)
             {
                 curr_process_list = list_push(curr_process_list, list_pop(&incoming_processes));              
             }
-            print_process_run(cpu_clock, mem_alloc, mem_usage, curr_process_list);
+
+            //Loads memory and calculate loading time penalty if not in Unlimited
+            //Memory mode
+            if (!mem_u_flag)
+            {
+                memory_addr = create_uint32_array(memory->n_total_pages, UINT32_MAX);
+                load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required, memory_addr);
+                curr_process_list->memory_address = memory_addr;
+            }
+            print_process_run(cpu_clock, mem_u_flag, load_penalty, mem_usage, memory->n_total_pages, curr_process_list);
         }
 
         //Checks if cpu_clock corresponds to a newly arrived process, adds to processing queue
@@ -160,7 +209,8 @@ int main(int argc, char **argv)
         {
             while(incoming_processes && cpu_clock == incoming_processes->arrival_time)
             {
-                curr_process_list = list_push(curr_process_list, list_pop(&incoming_processes));              
+                struct process_t *popped_proc = list_pop(&incoming_processes);
+                curr_process_list = list_push(curr_process_list, popped_proc);
             }
         }
         
@@ -184,11 +234,22 @@ int main(int argc, char **argv)
             {
                 quantum_clock = quantum - 1;
                 curr_process_list = round_robin_shuffle(curr_process_list);
-                print_process_run(cpu_clock, mem_alloc, mem_usage, curr_process_list);
+                
+                print_process_run(cpu_clock, mem_u_flag, load_penalty, mem_usage, memory->n_total_pages, curr_process_list);
+                //Loads memory and calculate loading time penalty if not in Unlimited
+                //Memory mode
+                
+                if (!mem_u_flag)
+                {
+                    memory_addr = create_uint32_array(memory->n_total_pages, UINT32_MAX);
+                    load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required, memory_addr);
+                    curr_process_list->memory_address = memory_addr;
+                }
+                
             }
         }
         //Run process, and adds finished process for performance stats
-        fin_flag = execute_process(&curr_process_list);
+        fin_flag = execute_process(cpu_clock, &curr_process_list);
         
         
 

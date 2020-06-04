@@ -14,10 +14,11 @@ struct process_t *list_pop(struct process_t **);
 
 void print_list(struct process_t *list)
 {
+    printf("PRINTING LIST: \n");
     struct process_t *curr = list;
     while(curr != NULL)
     {
-        printf("NEW process: %d %d %d %d %d\n", curr->arrival_time, curr->pid, curr->memory_required, curr->time_required, curr->time_finished);
+        printf("NEW process: %"PRIu32" %"PRIu32" %"PRIu32" %"PRIu32" %"PRIu32"\n", curr->arrival_time, curr->pid, curr->memory_required, curr->time_required, curr->time_finished);
         curr = curr->next;
     }
     printf("\n\n");
@@ -48,7 +49,11 @@ struct process_t *create_process(uint32_t pid, uint32_t arrival, uint32_t mem_ne
     new_p->arrival_time = arrival;
     new_p->memory_required = mem_needed;
     new_p->time_required = time_to_fin;
+    new_p->job_time = time_to_fin;
+    new_p->time_last_used = 0;
     new_p->time_finished = 0;
+    new_p->time_load_penalty = 0;
+    new_p->memory_address = NULL;
     new_p->next = NULL;
 
     return new_p; 
@@ -251,13 +256,17 @@ struct process_t *round_robin_shuffle(struct process_t *list)
 /*
 Decrement time remaining for process to use CPU.
 @params
+cpu_clock, uint32_t, representation of CPU clock in Seconds
 list, struct process_t **, pointer to the process_t linked list
 
 @return
 int, 1 if a process finished executing, else 0
 */
-int execute_process(struct process_t **list)
+int execute_process(uint32_t cpu_clock, struct process_t **list)
 {
+    (*list)->time_last_used = cpu_clock;
+
+
     (*list)->time_required -= 1;
 
     if ((*list)->time_required <= 0)
@@ -321,7 +330,7 @@ struct process_t *list_push(struct process_t *list, struct process_t *item)
             return temp;
         }
     }
-
+    
     while (curr->next != NULL)
     {
         //Inserts in ascending order of pid if more than 1 process arrived at 
@@ -343,5 +352,52 @@ struct process_t *list_push(struct process_t *list, struct process_t *item)
     curr->next = temp;
 
     return list;
+}
 
+/*
+Removes a particular element from the list, if any
+@params
+list, struct process_t *, the linked list
+process, struct process_t *, the element to remove
+
+@return
+struct process_t *, the (un)modified linked list
+*/
+struct process_t *list_remove(struct process_t *list, struct process_t *process)
+{
+    struct process_t *curr = list;
+
+    //Check is the first element in the singleton list, the element in question
+    if (curr->pid == process->pid)
+    {
+        struct process_t *junk;
+
+        junk = list_pop(&curr);
+        curr = junk->next;
+        free(junk);
+        return curr;
+    }
+
+    while (curr->next != NULL)
+    {
+        if (curr->next->pid == process->pid)
+        {
+            struct process_t *junk = curr->next;
+
+            if (curr->next->next != NULL)
+            {
+                curr->next = curr->next->next;
+            }
+            else
+            {
+                curr->next = NULL;
+            }
+            free(junk);
+            return list;
+        }    
+
+        curr = curr->next;
+    }
+
+    return list;
 }
