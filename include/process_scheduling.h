@@ -2,6 +2,7 @@
 #define PROCESS_SCHEDULING_H
 
 #include <stdint.h>
+#include "../include/memory.h"
 
 typedef struct process_t
 {
@@ -31,7 +32,7 @@ struct process_t *list_pop(struct process_t **);
 struct process_t *list_remove(struct process_t *, struct process_t *);
 uint32_t count_processes(struct process_t *);
 int execute_process(uint32_t, struct process_t **);
-struct process_t *round_robin_shuffle(struct process_t *);
+struct process_t *round_robin_shuffle(struct process_t *, struct memory_t **);
 void free_list(struct process_t *);
 
 #endif

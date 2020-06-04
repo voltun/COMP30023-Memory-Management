@@ -355,3 +355,57 @@ uint32_t *reinit_uint32_array(uint32_t *array, uint32_t size, uint32_t init_valu
     }
     return array;
 }
+
+/*
+Adds elements from array not in master, into master
+!! ASSUMES BOTH ARRAYS ARE SAME MAX LENGTH
+@params
+master, uint32_t, the array to append to, if any appends
+array, uint32_t, array to check 
+size, uint32_t, max elements of master
+
+@return
+uint32_t *, the modified master array
+*/
+uint32_t *add_to_array_nodup(uint32_t *master, uint32_t *array, uint32_t size)
+{
+    uint32_t *new_list = create_uint32_array(size, UINT32_MAX);
+    uint32_t count1 = 0, count2 = 0;
+
+    for (uint32_t i = 0; i < size; i++)
+    {
+        if (master[count1] == UINT32_MAX && array[count2] == UINT32_MAX)
+        {
+            break;
+        }
+        //master array is used up
+        else if (master[count1] == UINT32_MAX)
+        {
+            new_list[i] = array[count2];
+            count2 += 1;
+            continue;
+        }
+        //input array used up
+        else if (array[count2] == UINT32_MAX)
+        {
+            new_list[i] = master[count1];
+            count1 += 1;
+            continue;
+        }
+
+        //Sequential insert 
+        if (master[count1] < array[count2])
+        {
+            new_list[i] = master[count1];
+            count1 += 1;
+        }
+        else
+        {
+            new_list[i] = array[count2];
+            count2 += 1;
+        }
+    
+    }
+
+    return new_list;
+}

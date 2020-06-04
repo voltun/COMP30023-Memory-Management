@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include "../include/utilities.h"
+#include "../include/memory.h"
 
 #define SIZE_BUFFER 256
 
@@ -217,9 +218,9 @@ list, struct process_t *, linked list of processes
 @return
 struct process_t *, the new linked list after round robin
 */
-struct process_t *round_robin_shuffle(struct process_t *list)
+struct process_t *round_robin_shuffle(struct process_t *list, struct memory_t **memory)
 {
-    
+    uint32_t pid1 = 0, pid_count = 0;
     struct process_t *new_head = NULL;
     struct process_t *temp = NULL;
     struct process_t *end = list;
@@ -250,6 +251,34 @@ struct process_t *round_robin_shuffle(struct process_t *list)
     temp->next = end;
     temp->next->next = NULL;
 
+    while((*memory)->pid_loaded[pid_count] != UINT32_MAX)
+    {
+        pid_count += 1;
+    }
+
+    //if empty or singleton, dont shuffle
+    if(pid_count <= 1)
+    {
+        return new_head;
+    }
+    
+    pid1 = (*memory)->pid_loaded[0];
+    //Insert first element into last
+    for (uint32_t i = 0; i < (*memory)->n_total_pages - 1; i++)
+    {
+        // printf("BEFORE: %"PRIu32"\n", (*memory)->pid_loaded[i]);
+        // printf("to insert: %"PRIu32"\n", (*memory)->pid_loaded[i+1]);
+        //found last element
+        if ((*memory)->pid_loaded[i] == UINT32_MAX)
+        {
+            (*memory)->pid_loaded[i-1] = pid1;
+            break;
+        }
+        
+        (*memory)->pid_loaded[i] = (*memory)->pid_loaded[i+1];
+        // printf("AFTER: %"PRIu32"\n", (*memory)->pid_loaded[i]);
+    }
+
     return new_head;
 }
 
@@ -266,7 +295,12 @@ int execute_process(uint32_t cpu_clock, struct process_t **list)
 {
     (*list)->time_last_used = cpu_clock;
 
-
+    if ((*list)->time_load_penalty > 0)
+    {
+        // printf("PENALTY\n");
+        (*list)->time_load_penalty -= 1;
+        return 0;
+    }
     (*list)->time_required -= 1;
 
     if ((*list)->time_required <= 0)

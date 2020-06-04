@@ -33,7 +33,7 @@ int main(int argc, char **argv)
     char sched_algo[SIZE_ALGO];
     char *mem_alloc = NULL;
     uint32_t mem_size = 0;
-    int mem_usage = 0, fin_flag = 0;
+    int fin_flag = 0;
     int quantum = 0, quantum_clock = 0;
     FILE *file;
     
@@ -137,10 +137,12 @@ int main(int argc, char **argv)
             {
                 memory_addr = create_uint32_array(memory->n_total_pages, UINT32_MAX);
                 load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required, memory_addr);
+                curr_process_list->time_load_penalty = load_penalty;
                 curr_process_list->memory_address = memory_addr;
             }
 
-            print_process_run(cpu_clock, mem_alloc, load_penalty, memory->mem_usage, memory->n_total_pages, curr_process_list);
+            print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
+             memory->n_total_pages, curr_process_list);
 
             
             fin_flag = 0; 
@@ -172,9 +174,11 @@ int main(int argc, char **argv)
             {
                 memory_addr = create_uint32_array(memory->n_total_pages, UINT32_MAX);
                 load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required, memory_addr);
+                curr_process_list->time_load_penalty = load_penalty;
                 curr_process_list->memory_address = memory_addr;
             }
-            print_process_run(cpu_clock, mem_alloc, load_penalty, memory->mem_usage, memory->n_total_pages, curr_process_list);
+            print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
+             memory->n_total_pages, curr_process_list);
         }
           
         //Checks if cpu_clock corresponds to a newly arrived process, adds to processing queue
@@ -196,8 +200,9 @@ int main(int argc, char **argv)
         //Rearrange currently running processes based on scheduling algorithm
 
         //ROUND ROBIN SCHEDULING
-        if (strcmp(sched_algo, ALGO_ROUNDROBIN) == 0)
+        if (strcmp(sched_algo, ALGO_ROUNDROBIN) == 0 && curr_process_list->time_load_penalty <= 0)
         {
+            // printf("quantum time\n");
             //Update quantum time
             if (quantum_clock > 0)
             {
@@ -206,19 +211,22 @@ int main(int argc, char **argv)
             else
             {
                 quantum_clock = quantum - 1;
-                curr_process_list = round_robin_shuffle(curr_process_list);
+                curr_process_list = round_robin_shuffle(curr_process_list, &memory);
                 
-                print_process_run(cpu_clock, mem_alloc, load_penalty, memory->mem_usage, memory->n_total_pages, curr_process_list);
+                
                 //Loads memory and calculate loading time penalty if not in Unlimited
                 //Memory mode
                 
                 if (strcmp(mem_alloc, MEM_UNLIMITED) != 0)
                 {
                     memory_addr = create_uint32_array(memory->n_total_pages, UINT32_MAX);
+                    
                     load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required, memory_addr);
+                    curr_process_list->time_load_penalty = load_penalty;
                     curr_process_list->memory_address = memory_addr;
                 }
-                
+                print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
+                 memory->n_total_pages, curr_process_list);
             }
         }
         //Run process, and adds finished process for performance stats

@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <inttypes.h>
-#include "../include/process_scheduling.h"
 
 typedef struct memory_t
 {

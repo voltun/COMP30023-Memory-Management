@@ -20,5 +20,6 @@ void print_process_run(uint32_t, char *, uint32_t, int, uint32_t, struct process
 void print_process_finish(uint32_t, struct process_t *); 
 void print_memory_evict(uint32_t, uint32_t *, uint32_t); 
 void print_performance_stats(uint32_t, struct datalog_t *);
+uint32_t *add_to_array_nodup(uint32_t *, uint32_t *, uint32_t);
 
 #endif
