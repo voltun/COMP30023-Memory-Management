@@ -141,7 +141,7 @@ process, struct process_t *, the process linked list, prints first element only
 */
 void print_process_finish(uint32_t cpu_clock, struct process_t *process) 
 {
-    printf("%"PRIu32", FINISHED, id=%"PRIu32", proc-remaining=%"PRIu32"\n", cpu_clock, process->pid, count_processes(process));
+    printf("%"PRIu32", FINISHED, id=%"PRIu32", proc-remaining=%"PRIu32"\n", cpu_clock, process->pid, count_processes(process)-1);
 }
 
 void print_performance_stats(uint32_t cpu_clock, struct datalog_t *log)
