@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include "../include/utilities.h"
 
 #define SIZE_BUFFER 256
@@ -24,15 +26,15 @@ void print_list(struct process_t *list)
 /*
 Creates a new process linked list head of type process_t
 @params
-pid, int, the process ID
-arrival, int, the arrival time of process in Seconds
-mem_needed, int, the amount of memory needed in KB
-time_to_fin, int, the required time for process to finish in Seconds
+pid, uint32_t, the process ID
+arrival, uint32_t, the arrival time of process in Seconds
+mem_needed, uint32_t, the amount of memory needed in KB
+time_to_fin, uint32_t, the required time for process to finish in Seconds
 
 @return
 a process_t linked list head pointer
 */
-struct process_t *create_process(int pid, int arrival, int mem_needed, int time_to_fin)
+struct process_t *create_process(uint32_t pid, uint32_t arrival, uint32_t mem_needed, uint32_t time_to_fin)
 {
     struct process_t *new_p = malloc(sizeof(struct process_t));
 
@@ -73,17 +75,46 @@ struct process_t *get_last_process(struct process_t *list)
 }
 
 /*
+Frees up memory used by the linked list
+@params
+list, struct process_t *, head of linked list to be freed
+*/
+void free_list(struct process_t *list)
+{
+    struct process_t *curr = list;
+
+    //Case for empty list
+    if (!list)
+    {
+        return;
+    }
+
+    //Case for singleton element
+    if (list->next == NULL)
+    {
+        free(list);
+    }
+
+    while(list != NULL)
+    {
+        curr = list;
+        list = list->next;
+        free(curr);
+    }
+}
+
+/*
 Counts the number of processes in a linked list
 @params
 list, struct process_t *, the linked list
 
 @return
-int, number of processes in linked list
+uint32_t, number of processes in linked list
 */
-int count_processes(struct process_t *list)
+uint32_t count_processes(struct process_t *list)
 {
     struct process_t *curr = list;
-    int n = 1;
+    uint32_t n = 1;
 
     //Returns 0 for empty list and 1 for singleton list
     if (!list)
@@ -118,9 +149,9 @@ struct process_t *get_all_processes(FILE *fptr)
     struct process_t *head = malloc(sizeof(struct process_t));
     struct process_t *curr = NULL;
     struct process_t *new_process = NULL;
-    int time = 0, pid = 0, mem = 0, time_fin = 0, is_head = 1;
+    uint32_t time = 0, pid = 0, mem = 0, time_fin = 0, is_head = 1;
 
-    while (fscanf(fptr, "%d %d %d %d ", &time, &pid, &mem, &time_fin) == 4)
+    while (fscanf(fptr, "%"SCNd32" %"SCNd32" %"SCNd32" %"SCNd32" ", &time, &pid, &mem, &time_fin) == 4)
     {
         //Add first element into head
         if (is_head)
@@ -153,14 +184,14 @@ Checks if cpu_clock is equal to a new process' arrival time,
 if true, pops the process from a stored master list and appends to current process list
 !! WILL ADD ALL SUBSEQUENT PROCESSES WITH SAME ARRIVAL TIME IF ABOVE IS TRUE
 @params
-cpu_clock, int, representation of CPU clock in Seconds
+cpu_clock, uint32_t, representation of CPU clock in Seconds
 master, struct process_t *, a master linked list of all future processes of the simulation
 curr_processes, struct process_t *, the linked list of current processes queued by CPU simulation
 
 @return
 an int, 0 if no new process arrival corresponds to cpu_clock, 1 if new processes added
 */
-int has_process_arrived(int cpu_clock, struct process_t *master)
+int has_process_arrived(uint32_t cpu_clock, struct process_t *master)
 {
     //If no new process corresponds to the cpu clock
     if (cpu_clock != master->arrival_time)

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <inttypes.h>
 #include "../include/process_scheduling.h"
 #include "../include/utilities.h"
 
@@ -53,24 +54,35 @@ struct datalog_t *add_fin_process(struct datalog_t *log, struct process_t *proce
 }
 
 /*
+Frees up the datalog_t data struct
+@params
+log, struct datalog_t, the log to be free
+*/
+void free_datalog(struct datalog_t *log)
+{
+    free_list(log->finished_process);
+    free(log);
+}
+
+/*
 Prints out the transcript as listed in project specs for RUNNING
 !! Usable for both Unlimited Memory and Limited Memory
 @params
-cpu_clock, int, representation of CPU clock in Seconds
+cpu_clock, uint32_t, representation of CPU clock in Seconds
 mem_option, char *, parameter of memory allocation, as in spec
 mem_usage, int, rounded up percentage of memory usage, ignored if mem_option=="u"
 process, struct process_t *, the process linked list, prints first element only
 */
-void print_process_run(int cpu_clock, char *mem_option, int mem_usage, struct process_t *process)
+void print_process_run(uint32_t cpu_clock, char *mem_option, int mem_usage, struct process_t *process)
 {
     //If the scheduler is running on unlimited memory mode
     if (strcmp(mem_option, UNLIMITED_MEMORY) == 0)
     {
-        printf("%d, RUNNING, id=%d, remaining-time=%d\n", cpu_clock, process->pid, process->time_required);
+        printf("%"PRIu32", RUNNING, id=%d, remaining-time=%d\n", cpu_clock, process->pid, process->time_required);
     }
     else
     {
-        printf("%d, RUNNING, id=%d, remaining-time=%d, load-time=%d, mem-usage=%d%%, mem-addresses=[%s]\n",
+        printf("%"PRIu32", RUNNING, id=%d, remaining-time=%d, load-time=%d, mem-usage=%d%%, mem-addresses=[%s]\n",
          cpu_clock, process->pid ,process->time_required, 0, mem_usage, "TODO");
     }
 }
@@ -78,13 +90,13 @@ void print_process_run(int cpu_clock, char *mem_option, int mem_usage, struct pr
 /*
 Prints out the transcript as listed in project specs for EVICTED 
 @params
-cpu_clock, int, representation of CPU clock in Seconds
+cpu_clock, uint32_t, representation of CPU clock in Seconds
 mem_address, TODO
 n_mem_addr, TODO
 */
-void print_memory_evict(int cpu_clock, int *mem_address, int n_mem_addr) 
+void print_memory_evict(uint32_t cpu_clock, int *mem_address, int n_mem_addr) 
 {
-    printf("%d, EVICTED, mem-addresses=[%d", cpu_clock, mem_address[0]);
+    printf("%"PRIu32", EVICTED, mem-addresses=[%d", cpu_clock, mem_address[0]);
     for (int i = 1; i < n_mem_addr; i++)
     {
         printf(", %d", mem_address[i]);
@@ -95,15 +107,15 @@ void print_memory_evict(int cpu_clock, int *mem_address, int n_mem_addr)
 /*
 Prints out the transcript as listed in project specs for FINISHED
 @params
-cpu_clock, int, representation of CPU clock in Seconds
+cpu_clock, uint32_t, representation of CPU clock in Seconds
 process, struct process_t *, the process linked list, prints first element only
 */
-void print_process_finish(int cpu_clock, struct process_t *process) 
+void print_process_finish(uint32_t cpu_clock, struct process_t *process) 
 {
-    printf("%d, FINISHED, id=%d, proc-remaining=%d\n", cpu_clock, process->pid, count_processes(process)-1);
+    printf("%"PRIu32", FINISHED, id=%d, proc-remaining=%d\n", cpu_clock, process->pid, count_processes(process)-1);
 }
 
-void print_performance_stats(int cpu_clock, struct datalog_t *log)
+void print_performance_stats(uint32_t cpu_clock, struct datalog_t *log)
 {
     double sum_for_turnaround = 0.0;
     int turnaround = 0;
@@ -120,6 +132,6 @@ void print_performance_stats(int cpu_clock, struct datalog_t *log)
     printf("Throughput %d, %d, %d\n", -1, -1, -1);
     printf("Turnaround time %d\n", turnaround);
     printf("Time overhead %2f %2f\n", -1.0, -1.0);
-    printf("Makespan %d\n", cpu_clock);
+    printf("Makespan %"PRIu32"\n", cpu_clock);
 }
 

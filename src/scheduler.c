@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "../include/utilities.h"
 #include "../include/process_scheduling.h"
 #include "../include/memory.h"
@@ -13,6 +14,10 @@
 #define PARAM_QUANTUM "-q"
 #define ALGO_ROUNDROBIN "rr"
 #define ALGO_FCOME_FSERVED "ff"
+#define ALGO_CUSTOM "cs"
+#define MEM_SWAPPING_X "p"
+#define MEM_VIRTUAL_MEM "v"
+#define MEM_CUSTOM "cm"
 
 #define SIZE_INPUTFILE 1000
 #define SIZE_ALGO 3
@@ -25,7 +30,8 @@ int main(int argc, char **argv)
     char input_file[SIZE_INPUTFILE];
     char sched_algo[SIZE_ALGO];
     char mem_alloc[SIZE_MEMALLOC];
-    int mem_size = 0, mem_usage = 0, fin_flag = 0;
+    uint32_t mem_size = 0;
+    int mem_usage = 0, fin_flag = 0;
     int algo_cs_flag = 0, algo_ff_flag = 0, algo_rr_flag = 0;
     int quantum = 0, quantum_clock = 0;
     FILE *file;
@@ -33,7 +39,7 @@ int main(int argc, char **argv)
     struct datalog_t *log = NULL;
     struct process_t *curr_process_list = NULL;
     struct process_t *incoming_processes = malloc(sizeof(struct process_t));
-    int cpu_clock = 0;
+    uint32_t cpu_clock = 0;
 
     log = init_datalog();
     //Read input and params from CL arguments
@@ -101,7 +107,7 @@ int main(int argc, char **argv)
     {
         // printf("CLOCK: %d\n", cpu_clock);
 
-        //If a process finished running from last tick, print RUNNING transcript now
+        //If a process finished running, print RUNNING transcript now
         if (fin_flag && curr_process_list)
         {
             struct process_t *junk;
@@ -164,28 +170,33 @@ int main(int argc, char **argv)
         // print_list(curr_process_list);
         
         //Rearrange currently running processes based on scheduling algorithm
+
+        
         //ROUND ROBIN SCHEDULING
         if (algo_rr_flag)
         {
             //Update quantum time
             if (quantum_clock > 0)
             {
-                quantum_clock -= 1;
+                quantum_clock -= 1; 
             }
             else
             {
-                quantum_clock = quantum;
+                quantum_clock = quantum - 1;
                 curr_process_list = round_robin_shuffle(curr_process_list);
                 print_process_run(cpu_clock, mem_alloc, mem_usage, curr_process_list);
             }
         }
-
         //Run process, and adds finished process for performance stats
         fin_flag = execute_process(&curr_process_list);
         
+        
+
         //Update clocks and timers
         cpu_clock += 1;
     }
+
+    free_datalog(log);
 
     return 0;
 }
