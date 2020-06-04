@@ -10,6 +10,7 @@
 #define THROUGHPUT_INTERVAL 60
 #define N_THROUGHPUT_METRIC 3
 #define N_OVERHEAD_METRIC 2
+#define MEM_UNLIMITED "u"
 
 int get_turnaround_time(struct datalog_t *log);
 uint32_t *get_throughput(struct datalog_t *log, uint32_t cpu_clock);
@@ -83,11 +84,11 @@ mem_usage, int, rounded up percentage of memory usage, ignored if mem_option=="u
 n_mem_addr, uint32_t, max size of mem_addr array
 process, struct process_t *, the process linked list, prints first element only
 */
-void print_process_run(uint32_t cpu_clock, int flag_unlimited, uint32_t load_time, int mem_usage, 
+void print_process_run(uint32_t cpu_clock, char *mem_alloc, uint32_t load_time, int mem_usage, 
 uint32_t n_mem_addr, struct process_t *process)
 {
     //If the scheduler is running on unlimited memory mode
-    if (flag_unlimited)
+    if ((strcmp(mem_alloc, MEM_UNLIMITED) == 0))
     {
         printf("%"PRIu32", RUNNING, id=%d, remaining-time=%d\n", cpu_clock, process->pid, process->time_required);
     }
