@@ -452,7 +452,7 @@ void update_mem_usage(struct memory_t **memory)
 
     free_space = (int) count_unused_mem(*memory);
     
-    usage = ceil( ((float)(total - free_space)) / ((float)total) );
+    usage = ceil( (((float)(total - free_space)) / ((float)total)) * 100.0 );
     // usage = 100.0 - floor( (((float)free_space) / ((float)total)) * 100.0);
     
     (*memory)->mem_usage = usage;
