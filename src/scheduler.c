@@ -192,6 +192,12 @@ int main(int argc, char **argv)
                 curr_process_list = list_push(curr_process_list, popped_proc);
             }
         }
+        //There are still incoming processes in simulation but no currently running processes
+        else if (incoming_processes && !curr_process_list)
+        {
+            cpu_clock += 1;
+            continue;
+        }
         
         // printf("MASTER: \n");
         // print_list(incoming_processes);
@@ -200,7 +206,7 @@ int main(int argc, char **argv)
         //ROUND ROBIN SCHEDULING
         if (strcmp(sched_algo, ALGO_ROUNDROBIN) == 0 && curr_process_list->time_load_penalty <= 0)
         {
-            // printf("quantum time\n");
+            
             //Update quantum time
             if (quantum_clock > 0)
             {
@@ -208,7 +214,7 @@ int main(int argc, char **argv)
             }
             else
             {
-                quantum_clock = quantum;
+                quantum_clock = quantum - 1;
                 curr_process_list = round_robin_shuffle(curr_process_list, &memory);
                 
                 
@@ -219,6 +225,7 @@ int main(int argc, char **argv)
                 print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
                  memory->n_total_pages, curr_process_list);
             }
+            // printf("quantum time: %d\n", quantum_clock);
         }
         //Run process, and adds finished process for performance stats
         fin_flag = execute_process(cpu_clock, &curr_process_list);

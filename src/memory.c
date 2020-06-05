@@ -99,16 +99,10 @@ uint32_t load_into_memory_p(struct memory_t **memory, uint32_t pid, uint32_t mem
         {
             //Find pid of evictee, UINT32_MAX if none found
             evictee = find_evictee_lru(*memory);
-            
-            if (evictee != UINT32_MAX)
-            {
-                evicted_mem = evict_from_memory(memory, evictee);
-            
-                if (evicted_mem)
-                {
-                    final_evict_addr = add_to_array_nodup(final_evict_addr, evicted_mem, (*memory)->n_total_pages);
-                }
-            }
+
+            evicted_mem = evict_from_memory(memory, evictee);
+            final_evict_addr = add_to_array_nodup(final_evict_addr, evicted_mem, (*memory)->n_total_pages);
+
             free_space = count_unused_mem(*memory);
         }
         print_memory_evict(cpu_clock, final_evict_addr, (*memory)->n_total_pages);
