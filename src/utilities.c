@@ -57,7 +57,6 @@ struct datalog_t *add_fin_process(struct datalog_t *log, struct process_t *proce
     {
         curr = curr-> next;
     }
-
     curr->next = process;
 
     return log;
