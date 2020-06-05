@@ -139,6 +139,7 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
 
     
     loaded_pages = has_been_loaded(*memory, pid);
+    *fault = 0;
     //If the minimum required pages to run given process met, don't need to insert more
     //OR if total number of pages required by process is less than minimum required and already
     //in memory, return
@@ -156,8 +157,6 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
         return 0;
     }
 
-    *fault = 1;
-
     mem_addr = reinit_uint32_array(mem_addr, (*memory)->n_total_pages, UINT32_MAX);
 
     //Loads all process pages into memory if available space
@@ -169,11 +168,13 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
     //but not enough free space to load all process pages
     else if (free_space >= min_exec_pages)
     {
+        *fault = 1;
         n_loaded = free_space;
     }
     //Evicts some/all processes until minimum execution requirement
     else
     {
+        *fault = 1;
         final_evict_addr = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
         //Keep evicting until minimum execution pages met or process has enough to fit all if less
         //memory needed
