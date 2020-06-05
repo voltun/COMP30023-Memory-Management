@@ -100,11 +100,12 @@ int main(int argc, char **argv)
 
     //Init all processes into linked list for better simulation
     incoming_processes = get_all_processes(file);
+    print_list(incoming_processes);
     
     //Start CPU simulation
     while(1)
     {
-        // printf("CLOCK: %d\n", cpu_clock);
+        printf("CLOCK: %d\n", cpu_clock);
 
         //If a process finished running, print RUNNING transcript now
         if (fin_flag && curr_process_list)
@@ -195,6 +196,7 @@ int main(int argc, char **argv)
         {
             
             //If there are no currently running processes but simulation is still ongoing
+            //and a new process has arrived
             if (!curr_process_list)
             {
                 curr_process_list = malloc(sizeof(struct process_t));

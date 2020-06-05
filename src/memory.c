@@ -335,10 +335,6 @@ uint32_t has_been_loaded(struct memory_t *memory, uint32_t pid)
 
     for (uint32_t i = 0; i < memory->n_total_pages; i++)
     {
-        if (memory->main_memory[i] == UINT32_MAX)
-        {
-            break;
-        }
         //Found a page allocated to the process
         if (memory->main_memory[i] == pid)
         {
@@ -399,6 +395,12 @@ uint32_t *add_into_memory(struct memory_t **memory, uint32_t pid, uint32_t pages
     return mem_addr;
 }
 
+/*
+Updates memory usage in the main memory
+!! Modifies in array
+@params
+memory, struct memory_t **, pointer to the memory_t * to allow modification
+*/
 void update_mem_usage(struct memory_t **memory)
 {
     int free_space = 0;
