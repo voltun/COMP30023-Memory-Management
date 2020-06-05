@@ -238,7 +238,7 @@ uint32_t *get_throughput(struct datalog_t *log, uint32_t cpu_clock)
     }
 
     //Calculate average
-    avg = (uint32_t) ceil(sum / size);
+    avg = (uint32_t) ceil(sum / (size+1));
 
     //Package data for return
     ret_val = malloc(sizeof(uint32_t)*N_THROUGHPUT_METRIC);
