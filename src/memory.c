@@ -193,7 +193,7 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
             evicted_mem = evict_one_by_one(memory, evictee);
             // printf("%"PRIu32" ", evicted_mem);
             //Did not evict any memory address means no more pages in memory
-            if (has_been_loaded(*memory, evictee) <= 0)
+            if (evicted_mem == NULL)
             {
                 cont_flag = 0;
                 continue;
