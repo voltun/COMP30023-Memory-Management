@@ -132,14 +132,8 @@ int main(int argc, char **argv)
 
                 print_performance_stats(cpu_clock, log);
                 break;
-            }
+            }          
             
-            //There are still incoming processes in simulation but no currently running processes
-            if (incoming_processes && !curr_process_list)
-            {
-                cpu_clock += 1;
-                continue;
-            }
             //Use custom scheduling if set
             if ((strcmp(sched_algo, ALGO_CUSTOM) == 0))
             {
@@ -148,11 +142,19 @@ int main(int argc, char **argv)
 
             run_memory(&memory, mem_alloc, curr_process_list, cpu_clock);
 
+            fin_flag = 0; 
+            quantum_clock = quantum;   
+
+            //There are still incoming processes in simulation but no currently running processes
+            if (incoming_processes && !curr_process_list)
+            {
+                cpu_clock += 1;
+                continue;
+            }
+
             print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
              memory->n_total_pages, curr_process_list);
-         
-            fin_flag = 0; 
-            quantum_clock = quantum;        
+              
         }
 
         //Run first process at time 0
@@ -260,7 +262,7 @@ void run_memory(struct memory_t **memory, char *mem_alloc, struct process_t *cur
     uint32_t *memory_addr = NULL;
 
     //Running on Unlimited Memory
-    if (strcmp(mem_alloc, MEM_UNLIMITED) == 0)
+    if (strcmp(mem_alloc, MEM_UNLIMITED) == 0 || curr_process_list == NULL)
     {
         return;
     }
