@@ -294,7 +294,12 @@ void run_memory(struct memory_t **memory, char *mem_alloc, struct process_t *cur
         load_penalty = load_into_memory_p(memory, curr_process_list->pid, curr_process_list->memory_required, 
         memory_addr, cpu_clock);
         curr_process_list->time_load_penalty = load_penalty;
-        curr_process_list->memory_address = memory_addr;
+        //Updates memory address if pages were not in memory already before suspension
+        if (load_penalty > 0)
+        {
+            curr_process_list->memory_address = memory_addr;
+        }
+        
     }
     //Running on Virtual memory mode
     else if (strcmp(mem_alloc, MEM_VIRTUAL_MEM) == 0)
@@ -303,6 +308,10 @@ void run_memory(struct memory_t **memory, char *mem_alloc, struct process_t *cur
         load_penalty = load_into_memory_v(memory, curr_process_list->pid, curr_process_list->memory_required, 
         memory_addr, cpu_clock);
         curr_process_list->time_load_penalty = load_penalty;
-        curr_process_list->memory_address = memory_addr;
+        //Updates memory address if pages were not in memory already before suspension
+        if (load_penalty > 0)
+        {
+            curr_process_list->memory_address = memory_addr;
+        }
     }
 }
