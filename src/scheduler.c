@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     struct process_t *curr_process_list = NULL;
     struct process_t *incoming_processes = malloc(sizeof(struct process_t));
     struct memory_t *memory = NULL;
-    uint32_t *memory_addr = NULL, *evict_addr = NULL;
+    uint32_t *memory_addr = NULL, *evicted_mem = NULL;
     uint32_t cpu_clock = 0, load_penalty = 0;
 
     log = init_datalog();
@@ -113,10 +113,10 @@ int main(int argc, char **argv)
             //Handles memory eviction if not in unlimited memory mode
             if (strcmp(mem_alloc, MEM_UNLIMITED) != 0)
             {
-                evict_addr = create_uint32_array(memory->n_total_pages, UINT32_MAX);
-                evict_addr = evict_from_memory(&memory, curr_process_list->pid);
-                print_memory_evict(cpu_clock, evict_addr, memory->n_total_pages);
-                free(evict_addr);
+                evicted_mem = create_uint32_array(memory->n_total_pages, UINT32_MAX);
+                evicted_mem = evict_from_memory(&memory, curr_process_list->pid);      
+                print_memory_evict(cpu_clock, evicted_mem, memory->n_total_pages);
+                free(evicted_mem);          
             }
             print_process_finish(cpu_clock, curr_process_list);
             junk = list_pop(&curr_process_list);
@@ -136,7 +136,8 @@ int main(int argc, char **argv)
             if (strcmp(mem_alloc, MEM_UNLIMITED) != 0)
             {
                 memory_addr = create_uint32_array(memory->n_total_pages, UINT32_MAX);
-                load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required, memory_addr);
+                load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required, 
+                memory_addr, cpu_clock);
                 curr_process_list->time_load_penalty = load_penalty;
                 curr_process_list->memory_address = memory_addr;
             }
@@ -173,7 +174,8 @@ int main(int argc, char **argv)
             if (strcmp(mem_alloc, MEM_UNLIMITED) != 0)
             {
                 memory_addr = create_uint32_array(memory->n_total_pages, UINT32_MAX);
-                load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required, memory_addr);
+                load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required,
+                 memory_addr, cpu_clock);
                 curr_process_list->time_load_penalty = load_penalty;
                 curr_process_list->memory_address = memory_addr;
             }
@@ -200,7 +202,7 @@ int main(int argc, char **argv)
         //Rearrange currently running processes based on scheduling algorithm
 
         //ROUND ROBIN SCHEDULING
-        if (strcmp(sched_algo, ALGO_ROUNDROBIN) == 0 && curr_process_list->time_load_penalty < 0)
+        if (strcmp(sched_algo, ALGO_ROUNDROBIN) == 0 && curr_process_list->time_load_penalty <= 0)
         {
             // printf("quantum time\n");
             //Update quantum time
@@ -221,7 +223,8 @@ int main(int argc, char **argv)
                 {
                     memory_addr = create_uint32_array(memory->n_total_pages, UINT32_MAX);
                     
-                    load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required, memory_addr);
+                    load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required,
+                     memory_addr, cpu_clock);
                     curr_process_list->time_load_penalty = load_penalty;
                     curr_process_list->memory_address = memory_addr;
                 }

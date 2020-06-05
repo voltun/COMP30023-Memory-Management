@@ -11,10 +11,9 @@
 
 uint32_t count_unused_mem(struct memory_t *memory);
 uint32_t *add_into_memory(struct memory_t **memory, uint32_t pid, uint32_t pages, uint32_t *mem_addr);
-uint32_t *evict_from_memory(struct memory_t **memory, uint32_t pid);
 uint32_t find_evictee_lru(struct memory_t *memory);
 void update_mem_usage(struct memory_t **memory);
-uint32_t has_been_loaded(struct memory_t *memory, uint32_t pid, uint32_t pages);
+uint32_t has_been_loaded(struct memory_t *memory, uint32_t pid);
 
 /*
 Initialises the memory_t struct, representation of main memory
@@ -58,12 +57,13 @@ Loads the given process' memory pages into the main memory
 @params
 memory, struct memory_t **, pointer to the memory_t * to allow modification
 pid, uint32_t, Process ID of requesting process
-mem_size, uint32_t, size of memory to be allocated in KB
+mem_size, uint32_t, size of memory to be allocated in KB    
+cpu_clock, uint32_t, representation of CPU clock in Seconds
 
 @return
 uint32_t, the time required to load given process' pages into memory, in Seconds
 */
-uint32_t load_into_memory_p(struct memory_t **memory, uint32_t pid, uint32_t mem_size, uint32_t *mem_addr)
+uint32_t load_into_memory_p(struct memory_t **memory, uint32_t pid, uint32_t mem_size, uint32_t *mem_addr, uint32_t cpu_clock)
 {
     uint32_t *evicted_mem = NULL, *final_evict_addr = NULL;
     uint32_t evictee = 0;
@@ -71,7 +71,7 @@ uint32_t load_into_memory_p(struct memory_t **memory, uint32_t pid, uint32_t mem
     uint32_t free_space = count_unused_mem(*memory);
 
     //Check if process was suspended prior and has all its file already loaded
-    if (has_been_loaded(*memory, pid, req_pages) == req_pages)
+    if (has_been_loaded(*memory, pid) == req_pages)
     {
         return 0;
     }
@@ -109,7 +109,7 @@ uint32_t load_into_memory_p(struct memory_t **memory, uint32_t pid, uint32_t mem
             }
             free_space = count_unused_mem(*memory);
         }
-        
+        print_memory_evict(cpu_clock, final_evict_addr, (*memory)->n_total_pages);
         mem_addr = add_into_memory(memory, pid, req_pages, mem_addr);
         
     }
@@ -219,12 +219,11 @@ Counts pages that are already loaded (if any) in memory by a particular process
 @params
 memory, struct memory_t *, memory representation
 pid, uint32_t, the Process ID 
-pages, uint32_t, number of memory pages the process would typically require
 
 @return
 uint32_t, number of pages that corresponds to the PID, if any
 */
-uint32_t has_been_loaded(struct memory_t *memory, uint32_t pid, uint32_t pages)
+uint32_t has_been_loaded(struct memory_t *memory, uint32_t pid)
 {
     uint32_t count = 0;
 
