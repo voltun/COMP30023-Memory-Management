@@ -35,8 +35,7 @@ int main(int argc, char **argv)
     char sched_algo[SIZE_ALGO];
     char *mem_alloc = NULL;
     uint32_t mem_size = 0;
-    int fin_flag = 0;
-    int quantum = 0, quantum_clock = 0;
+    int quantum = 0, quantum_clock = 0, fin_flag = 0;
     FILE *file;
     
     struct datalog_t *log = NULL;
@@ -49,6 +48,12 @@ int main(int argc, char **argv)
     log = init_datalog();
     sched_algo[0] = '\0';
     mem_alloc = malloc(sizeof(char) * SIZE_MEMALLOC);
+
+    if (!mem_alloc)
+    {
+        fprintf(stderr, "Malloc failed!\n");
+        exit(1);
+    }
 
     //Read input and params from CL arguments
     for (int i=1; i < argc; i++) 
@@ -90,24 +95,20 @@ int main(int argc, char **argv)
 
     memory = init_memory(mem_size, SIZE_PROCESSES);
     
-
     //Reads from the stated file_input
     if ((file = fopen(input_file, "r")) == NULL)
     {
         fprintf(stderr, "Unable to open file!\n");
         exit(1);
     }
-
     //Init all processes into linked list for better simulation
     incoming_processes = get_all_processes(file);
-    // print_list(incoming_processes);
     
     //Start CPU simulation
     while(1)
     {
-        // printf("CLOCK: %d\n", cpu_clock);
-
-        //If a process finished running, print RUNNING transcript now
+        //If a process finished running from last tick, print RUNNING transcript and handle
+        //transitions
         if (fin_flag && curr_process_list)
         {
             struct process_t *junk;
@@ -160,8 +161,7 @@ int main(int argc, char **argv)
             }
 
             print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
-             memory->n_total_pages, curr_process_list);
-              
+             memory->n_total_pages, curr_process_list);        
         }
 
         //Run first process at time 0
@@ -206,8 +206,7 @@ int main(int argc, char **argv)
         //Checks if cpu_clock corresponds to a newly arrived process, adds to processing queue
         //if matches
         if (incoming_processes && has_process_arrived(cpu_clock, incoming_processes))
-        {
-            
+        {           
             //If there are no currently running processes but simulation is still ongoing
             //and a new process has arrived
             if (!curr_process_list)
@@ -234,6 +233,7 @@ int main(int argc, char **argv)
                 memory->n_total_pages, curr_process_list);
             }
             
+            //If a new process arrived while another process is already running
             while(incoming_processes && cpu_clock == incoming_processes->arrival_time)
             {
                 struct process_t *popped_proc = list_pop(&incoming_processes);
@@ -247,14 +247,10 @@ int main(int argc, char **argv)
             continue;
         }
         
-        // printf("MASTER: \n");
-        // print_list(incoming_processes);
-        // printf("RUNNING: \n");
-        // print_list(curr_process_list);
         //ROUND ROBIN SCHEDULING
+        //Decrements quantum after load time penalty
         if (strcmp(sched_algo, ALGO_ROUNDROBIN) == 0 && curr_process_list->time_load_penalty <= 0)
-        {
-            
+        {            
             //Update quantum time
             if (quantum_clock > 0)
             {
@@ -273,11 +269,11 @@ int main(int argc, char **argv)
                 }
                 
                 curr_process_list = round_robin_shuffle(curr_process_list, &memory);
-                
-                
+                            
                 //Loads memory and calculate loading time penalty if not in Unlimited
                 //Memory mode               
                 run_memory(&memory, mem_alloc, curr_process_list, cpu_clock);
+
                 //Set reference bit if using cm
                 if (strcmp(mem_alloc, MEM_CUSTOM) == 0)
                 {
@@ -287,9 +283,7 @@ int main(int argc, char **argv)
                 print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
                  memory->n_total_pages, curr_process_list);
             }
-            // printf("quantum time: %d\n", quantum_clock);
         }
-
         //Run process
         fin_flag = execute_process(cpu_clock, &curr_process_list);
 
@@ -297,7 +291,10 @@ int main(int argc, char **argv)
         cpu_clock += 1;
     }
 
+    free(incoming_processes);
+    free(mem_alloc);
     free_datalog(log);
+    free_memory(memory);
 
     return 0;
 }
@@ -324,7 +321,10 @@ void run_memory(struct memory_t **memory, char *mem_alloc, struct process_t *cur
         {
             curr_process_list->memory_address = memory_addr;
         }
-        
+        else
+        {
+            free(memory_addr);
+        }
     }
     //Running on Virtual memory mode
     else if (strcmp(mem_alloc, MEM_VIRTUAL_MEM) == 0)
@@ -339,20 +339,27 @@ void run_memory(struct memory_t **memory, char *mem_alloc, struct process_t *cur
         {
             curr_process_list->memory_address = memory_addr;
         }
+        else
+        {
+            free(memory_addr);
+        }
     }
     //Running on Custom memory mode
     else if (strcmp(mem_alloc, MEM_CUSTOM) == 0)
     {
         memory_addr = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
         load_penalty = load_into_memory_cm(memory, curr_process_list->pid, curr_process_list->memory_required, 
-        memory_addr, &page_fault_penalty, cpu_clock);
-        
+        memory_addr, &page_fault_penalty, cpu_clock);        
         curr_process_list->time_load_penalty = load_penalty;
         curr_process_list->time_required += page_fault_penalty;
         //Updates memory address if pages were not in memory already before suspension
         if (load_penalty > 0)
         {
             curr_process_list->memory_address = memory_addr;
+        }
+        else
+        {
+            free(memory_addr);
         }
     }
 }

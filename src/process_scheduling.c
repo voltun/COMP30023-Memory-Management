@@ -6,35 +6,6 @@
 #include "../include/utilities.h"
 #include "../include/memory.h"
 
-#define SIZE_BUFFER 256
-
-struct process_t *get_next_process(FILE *fptr);
-struct process_t *list_pop(struct process_t **);
-
-void print_array(uint32_t *arr, uint32_t size)
-{
-    for (uint32_t i = 0; i < size; i++)
-    {
-        if (arr[i] == UINT32_MAX)
-        {
-            return;
-        }
-        printf("ARRAY: %"PRIu32"\n", arr[i]);
-    }
-}
-
-void print_list(struct process_t *list)
-{
-    printf("PRINTING LIST: \n");
-    struct process_t *curr = list;
-    while(curr != NULL)
-    {
-        printf("NEW process: %"PRIu32" %"PRIu32" %"PRIu32" %"PRIu32" %"PRIu32"\n", curr->arrival_time, curr->pid, curr->memory_required, curr->time_required, curr->time_finished);
-        curr = curr->next;
-    }
-    printf("\n\n");
-}
-
 /*
 Creates a new process linked list head of type process_t
 @params
@@ -71,26 +42,6 @@ struct process_t *create_process(uint32_t pid, uint32_t arrival, uint32_t mem_ne
 }
 
 /*
-Traverse to the last element of a linked list
-@params
-list, struct process_t *, the linked list of processes
-
-@return
-a struct process_t * of last process
-*/
-struct process_t *get_last_process(struct process_t *list)
-{
-    struct process_t *curr = list;
-
-    while (curr->next != NULL)
-    {
-        curr = curr->next;
-    }
-
-    return curr;
-}
-
-/*
 Frees up memory used by the linked list
 @params
 list, struct process_t *, head of linked list to be freed
@@ -104,17 +55,20 @@ void free_list(struct process_t *list)
     {
         return;
     }
-
+    
     //Case for singleton element
     if (list->next == NULL)
     {
+        free(list->memory_address);
         free(list);
+        return;
     }
-
+    
     while(list != NULL)
     {
         curr = list;
         list = list->next;
+        free(curr->memory_address);
         free(curr);
     }
 }
@@ -172,7 +126,6 @@ struct process_t *get_all_processes(FILE *fptr)
         //Add first element into head
         if (is_head)
         {
-            new_process = malloc(sizeof(struct process_t));
             new_process = create_process(pid, time, mem, time_fin);
             head = new_process;
             curr = head;
@@ -202,7 +155,6 @@ if true, pops the process from a stored master list and appends to current proce
 @params
 cpu_clock, uint32_t, representation of CPU clock in Seconds
 master, struct process_t *, a master linked list of all future processes of the simulation
-curr_processes, struct process_t *, the linked list of current processes queued by CPU simulation
 
 @return
 an int, 0 if no new process arrival corresponds to cpu_clock, 1 if new processes added
@@ -276,8 +228,6 @@ struct process_t *round_robin_shuffle(struct process_t *list, struct memory_t **
     //Insert first element into last
     for (uint32_t i = 0; i < (*memory)->n_total_pages - 1; i++)
     {
-        // printf("BEFORE: %"PRIu32"\n", (*memory)->pid_loaded[i]);
-        // printf("to insert: %"PRIu32"\n", (*memory)->pid_loaded[i+1]);
         //found last element
         if ((*memory)->pid_loaded[i] == UINT32_MAX)
         {
@@ -286,7 +236,6 @@ struct process_t *round_robin_shuffle(struct process_t *list, struct memory_t **
         }
         
         (*memory)->pid_loaded[i] = (*memory)->pid_loaded[i+1];
-        // printf("AFTER: %"PRIu32"\n", (*memory)->pid_loaded[i]);
     }
 
     return new_head;
@@ -372,7 +321,6 @@ int execute_process(uint32_t cpu_clock, struct process_t **list)
 
     if ((*list)->time_load_penalty > 0)
     {
-        // printf("PENALTY\n");
         (*list)->time_load_penalty -= 1;
         return 0;
     }
@@ -383,7 +331,6 @@ int execute_process(uint32_t cpu_clock, struct process_t **list)
         return 1;
     }
     return 0;
-
 }
 
 /*
@@ -396,7 +343,6 @@ a struct process_t *, the popped item from linked list
 */
 struct process_t *list_pop(struct process_t **list)
 {
-
     struct process_t *temp = *list;
 
     if (temp)

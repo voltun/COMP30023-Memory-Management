@@ -21,5 +21,6 @@ uint32_t load_into_memory_v(struct memory_t **, uint32_t, uint32_t, uint32_t *, 
 uint32_t load_into_memory_cm(struct memory_t **, uint32_t, uint32_t, uint32_t *, uint32_t *, uint32_t);
 void set_reference_bits(struct memory_t **, uint32_t, uint32_t);
 uint32_t *evict_from_memory(struct memory_t **, uint32_t);
+void free_memory(struct memory_t *);
 
 #endif

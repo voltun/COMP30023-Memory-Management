@@ -41,13 +41,6 @@ struct memory_t *init_memory(uint32_t mem_size, uint32_t n_total_proc)
     mem->n_total_proc = n_total_proc;
     mem->mem_usage = 0;
     mem->pid_loaded = create_uint32_array(n_total_proc, UINT32_MAX);
-    
-    // if (!(mem->process_loaded))
-    // {
-    //     fprintf(stderr, "Malloc failed!\n");
-    //     exit(1);
-    // }
-    
     mem->main_memory = create_uint32_array(mem->n_total_pages, UINT32_MAX);
     mem->reference_bit = create_uint32_array(mem->n_total_pages, 0);
 
@@ -79,13 +72,8 @@ uint32_t load_into_memory_p(struct memory_t **memory, uint32_t pid, uint32_t mem
         return 0;
     }
     
-
     mem_addr = reinit_uint32_array(mem_addr, (*memory)->n_total_pages, UINT32_MAX);
 
-    // process->memory_address = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
-    
-    // printf("LOADING PID: %"PRIu32"\n", pid);
-    // printf("REQ PAGES: %"PRIu32", FREE PAGES: %"PRIu32"\n", req_pages, free_space);
     //Loads process pages into memory if available space
     if (free_space >= req_pages)
     {
@@ -107,11 +95,8 @@ uint32_t load_into_memory_p(struct memory_t **memory, uint32_t pid, uint32_t mem
             free_space = count_unused_mem(*memory);
         }
         print_memory_evict(cpu_clock, final_evict_addr, (*memory)->n_total_pages);
-        mem_addr = add_into_memory(memory, pid, req_pages, mem_addr);
-        
+        mem_addr = add_into_memory(memory, pid, req_pages, mem_addr);   
     }
-
-
     return req_pages*LOADTIME_SWAPPING;
 }
 
@@ -138,7 +123,6 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
     uint32_t free_space = count_unused_mem(*memory);
     int cont_flag = 0;
 
-    
     loaded_pages = has_been_loaded(*memory, pid);
     *fault = 0;
     //If the minimum required pages to run given process met, don't need to insert more
@@ -188,11 +172,10 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
                 //Find pid of evictee, UINT32_MAX if none found
                 evictee = find_evictee_lru(*memory);
                 cont_flag = 1;
-                // printf("%"PRIu32" ", evictee);    
             }
             
             evicted_mem = evict_one_by_one(memory, evictee);
-            // printf("%"PRIu32" ", evicted_mem);
+
             //Did not evict any memory address means no more pages in memory
             if (evicted_mem == NULL)
             {
@@ -295,7 +278,6 @@ uint32_t load_into_memory_cm(struct memory_t **memory, uint32_t pid, uint32_t me
                 //Loop through second chance
                 for (uint32_t i = 0; i < (*memory)->n_total_pages; i++)
                 {
-                    // printf("addr: %"PRIu32", ref: %"PRIu32"\n", i, (*memory)->reference_bit[i]);
                     //skip page frame if owned by executing process
                     if ((*memory)->main_memory[i] == pid)
                     {
@@ -337,8 +319,7 @@ uint32_t load_into_memory_cm(struct memory_t **memory, uint32_t pid, uint32_t me
                 }
             }
             found_flag = 0;
-        }
-        
+        }   
         *fault = 1;
 
         print_memory_evict(cpu_clock, final_evict_addr, (*memory)->n_total_pages);
@@ -429,15 +410,13 @@ uint32_t *evict_from_memory(struct memory_t **memory, uint32_t pid)
             {
                 evicted_mem_addr = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
             }
-            // printf("EVICTING %"PRIu32"\n", pid);
             evicted_mem_addr[counter] = i;
             counter += 1;
             (*memory)->main_memory[i] = UINT32_MAX;
         }
     }
-    
     update_mem_usage(memory);
-    // (*memory)->process_loaded = list_remove((*memory)->process_loaded, victim);
+
     return evicted_mem_addr;
 }
 
@@ -452,8 +431,6 @@ uint32_t, the process ID chosen to be evicted (UINT32_MAX IF NONE)
 */
 uint32_t find_evictee_lru(struct memory_t *memory)
 {
-    // uint32_t least_time = UINT32_MAX, pid = UINT32_MAX;
-
     for (uint32_t i = 0; i < memory->n_total_proc; i++)
     {
         //Reach end of running processes list
@@ -466,16 +443,10 @@ uint32_t find_evictee_lru(struct memory_t *memory)
             }
             
             return memory->pid_loaded[i-1];
-            // break
         }
-        // //Find pid of process with least recently used time
-        // if (memory->pid_loaded[i]->time_last_used < least_time)
-        // {
-        //     least_time = memory->pid_loaded[i]->time_last_used;
-        //     pid = memory->pid_loaded[i];
-        // }
+
     }
-    
+    //Not supposed to be here
     return UINT32_MAX;
 }
 
@@ -490,6 +461,7 @@ uint32_t, number of unused memory pages
 uint32_t count_unused_mem(struct memory_t *memory)
 {
     uint32_t unused_pages = 0;
+
     for (uint32_t i = 0; i < memory->n_total_pages; i++)
     {
         if (memory->main_memory[i] == UINT32_MAX)
@@ -541,7 +513,6 @@ void set_reference_bits(struct memory_t **memory, uint32_t flag, uint32_t pid)
             (*memory)->reference_bit[i] = flag;
         }
     }
-
 }
 
 /*
@@ -579,8 +550,6 @@ uint32_t *add_into_memory(struct memory_t **memory, uint32_t pid, uint32_t pages
             mem_addr[n] = i;
             pages -= 1;
             n += 1;
-            // printf("INSERTING A PAGE. REMAINING: %"PRIu32"\n", pages);
-            // printf("memory address given: %"PRIu32"\n", mem_addr[n-1]);
         }
 
         //breaks after all pages inserted into memory
@@ -610,7 +579,20 @@ void update_mem_usage(struct memory_t **memory)
     free_space = (int) count_unused_mem(*memory);
     
     usage = ceil( (((float)(total - free_space)) / ((float)total)) * 100.0 );
-    // usage = 100.0 - floor( (((float)free_space) / ((float)total)) * 100.0);
     
     (*memory)->mem_usage = usage;
+}
+
+/*
+Frees up the memory struct
+@param
+memory, struct memory_t *, the memory
+*/
+void free_memory(struct memory_t *memory)
+{
+    free(memory->pid_loaded);
+    free(memory->main_memory);
+    free(memory->reference_bit);
+    
+    free(memory);
 }

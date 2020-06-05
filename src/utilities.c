@@ -43,8 +43,10 @@ stuct datalog_t *, the updated log
 struct datalog_t *add_fin_process(struct datalog_t *log, struct process_t *process)
 {
     struct process_t *curr = log->finished_process;
+
     log->n_proc_fin += 1;
 
+    //For empty list
     if (log->finished_process == NULL)
     {
         log->finished_process = process;

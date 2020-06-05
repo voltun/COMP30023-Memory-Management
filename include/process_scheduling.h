@@ -20,13 +20,7 @@ typedef struct process_t
 
 } process_t;
 
-//DEBUG
-void print_list(struct process_t *);
-void print_array(uint32_t *arr, uint32_t size);
-
-struct process_t *create_process(uint32_t, uint32_t, uint32_t, uint32_t);
 struct process_t *get_all_processes(FILE *);
-struct process_t *get_last_process(struct process_t *);
 int has_process_arrived(uint32_t, struct process_t *);
 struct process_t *list_push(struct process_t *, struct process_t *);
 struct process_t *list_pop(struct process_t **);
