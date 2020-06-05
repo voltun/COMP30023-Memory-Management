@@ -21,4 +21,4 @@ process_scheduling.o: src/process_scheduling.c include/process_scheduling.h
 .PHONY: clean
 
 clean:
-	rm -f $(OBJ)
+	rm -f $(OBJ) $(EXE)
