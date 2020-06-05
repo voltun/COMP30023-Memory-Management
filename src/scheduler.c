@@ -225,7 +225,7 @@ int main(int argc, char **argv)
                     
                     load_penalty = load_into_memory_p(&memory, curr_process_list->pid, curr_process_list->memory_required,
                      memory_addr, cpu_clock);
-                    curr_process_list->time_load_penalty = load_penalty;
+                    curr_process_list->time_load_penalty = load_penalty + 1;
                     curr_process_list->memory_address = memory_addr;
                 }
                 print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
