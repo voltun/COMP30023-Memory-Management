@@ -213,8 +213,14 @@ uint32_t *get_throughput(struct datalog_t *log, uint32_t cpu_clock)
     //Calculate number of processes for each interval
     for (struct process_t *curr = log->finished_process; curr != NULL; curr=curr->next)
     {
-        index = ((uint32_t) ceil((curr->time_finished - 1) / THROUGHPUT_INTERVAL));
-        
+        if (curr->time_finished % THROUGHPUT_INTERVAL == 0)
+        {
+            index = ((uint32_t) ceil((curr->time_finished - 10) / THROUGHPUT_INTERVAL));
+        }
+        else
+        {
+            index = ((uint32_t) ceil((curr->time_finished - 1) / THROUGHPUT_INTERVAL));
+        }
         interval_list[index] += 1;
     }
 
