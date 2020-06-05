@@ -49,6 +49,7 @@ struct memory_t *init_memory(uint32_t mem_size, uint32_t n_total_proc)
     // }
     
     mem->main_memory = create_uint32_array(mem->n_total_pages, UINT32_MAX);
+    mem->reference_bit = create_uint32_array(mem->n_total_pages, 0);
 
     return mem;
 }
@@ -237,12 +238,120 @@ uint32_t, the time required to load given process' pages into memory, in Seconds
 uint32_t load_into_memory_cm(struct memory_t **memory, uint32_t pid, uint32_t mem_size,
  uint32_t *mem_addr, uint32_t *fault, uint32_t cpu_clock)
 {
-    return 0;
+    uint32_t *final_evict_addr = NULL, *evicted_mem = NULL;
+    uint32_t min_exec_pages = SIZE_VMEM_MIN_RUN / SIZE_PER_MEM_PAGE;
+    uint32_t loaded_pages = 0, n_loaded = 0, prev_proc = UINT32_MAX;
+    uint32_t req_pages = mem_size / SIZE_PER_MEM_PAGE;
+    uint32_t free_space = count_unused_mem(*memory);
+    int found_flag = 0;
+    
+    loaded_pages = has_been_loaded(*memory, pid);
+    *fault = 0;
+    //If the minimum required pages to run given process met, don't need to insert more
+    //OR if total number of pages required by process is less than minimum required and already
+    //in memory, return
+    if (loaded_pages >= min_exec_pages)
+    {
+        //Page faults
+        if (loaded_pages < req_pages)
+        {
+            *fault = 1;
+        }
+        return 0;
+    }
+    if ((req_pages < min_exec_pages) && (loaded_pages >= req_pages))
+    {
+        return 0;
+    }
+    
+    mem_addr = reinit_uint32_array(mem_addr, (*memory)->n_total_pages, UINT32_MAX);
+    
+    //Loads all process pages into memory if available space
+    if (free_space >= (req_pages - loaded_pages))
+    {       
+        n_loaded = req_pages - loaded_pages;
+        mem_addr = add_into_memory(memory, pid, n_loaded, mem_addr);
+    }
+    //Loads as much pages as possible if free space meets minimum execution pages
+    //but not enough free space to load all process pages
+    else if (free_space >= min_exec_pages)
+    {
+        *fault = 1;
+        n_loaded = free_space;
+        mem_addr = add_into_memory(memory, pid, n_loaded, mem_addr);
+    }
+    //Evicts some/all processes until minimum execution requirement
+    else
+    {
+        final_evict_addr = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
+        *fault = 1;
+        
+        //Loop until enough space to insert required pages
+        for (uint32_t _n = 0; _n < (req_pages - loaded_pages) && _n < min_exec_pages; _n ++)
+        {
+            
+            while(!found_flag)
+            {
+                //Loop through second chance
+                for (uint32_t i = 0; i < (*memory)->n_total_pages; i++)
+                {
+                    // printf("addr: %"PRIu32", ref: %"PRIu32"\n", i, (*memory)->reference_bit[i]);
+                    //skip page frame if owned by executing process
+                    if ((*memory)->main_memory[i] == pid)
+                    {
+                        continue;
+                    }
+                    //Replace page with no second chance
+                    if ((*memory)->reference_bit[i] == 0)
+                    {
+                        found_flag = 1;
+                        prev_proc = (*memory)->main_memory[i];
+                        (*memory)->main_memory[i] = pid;
+                        evicted_mem = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
+                        evicted_mem[0] = i;
+                        n_loaded += 1;
+
+                        //Check if evicted process still has any pages in memory
+                        if (has_been_loaded(*memory, prev_proc) <= 0)
+                        {
+                            //Remove pid from book keeping
+                            for (uint32_t j = 0; i < (*memory)->n_total_proc; i++)
+                            {
+                                if ((*memory)->pid_loaded[j] == prev_proc)
+                                {
+                                    (*memory)->pid_loaded[j] = UINT32_MAX;
+                                    break;
+                                }
+                            }
+                        }
+                        final_evict_addr = add_to_array_nodup(final_evict_addr, evicted_mem, (*memory)->n_total_pages);
+
+                        break;
+                    }
+                    //Set reference bit to 0 
+                    else
+                    {
+                        (*memory)->reference_bit[i] = 0;
+                    }
+                    
+                }
+            }
+            found_flag = 0;
+        }
+        
+        *fault = 1;
+
+        print_memory_evict(cpu_clock, final_evict_addr, (*memory)->n_total_pages);
+    }
+    
+    update_mem_usage(memory);
+
+    return n_loaded*LOADTIME_SWAPPING;
 }
 
 /*
 Evicts only one process memory page from the memory
-!! ASSUMES MEMORY HAS PAGES ALREADY LOADED
+!! ASSUMES MEMORY HAS PAGES ALREADY LOADED AND EVICT FIRST OCCURENCE
 @params
 memory, struct memory_t **, pointer to the memory_t * to allow modification
 pid, uint32_t, process id of evictee :(
@@ -414,6 +523,25 @@ uint32_t has_been_loaded(struct memory_t *memory, uint32_t pid)
         }
     }
     return count;
+}
+
+/*
+Sets the reference bit of loaded process page frames to 1
+@params
+memory, struct memory_t **, pointer to the memory_t * to allow modification
+flag, uint32_t, 0 or 1
+pid, uint32_t, Process ID of executed process
+*/
+void set_reference_bits(struct memory_t **memory, uint32_t flag, uint32_t pid)
+{
+    for (uint32_t i = 0; i < (*memory)->n_total_pages; i++)
+    {
+        if ((*memory)->main_memory[i] == pid)
+        {
+            (*memory)->reference_bit[i] = flag;
+        }
+    }
+
 }
 
 /*

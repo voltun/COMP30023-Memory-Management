@@ -143,6 +143,13 @@ int main(int argc, char **argv)
 
             run_memory(&memory, mem_alloc, curr_process_list, cpu_clock);
 
+             //Set reference bit if using cm
+            if (strcmp(mem_alloc, MEM_CUSTOM) == 0)
+            {
+                set_reference_bits(&memory, 1, curr_process_list->pid);
+                // print_array(memory->reference_bit, memory->n_total_pages);
+            }
+
             fin_flag = 0; 
             quantum_clock = quantum;   
 
@@ -181,11 +188,17 @@ int main(int argc, char **argv)
             {
                 curr_process_list = sort_shortest_job(curr_process_list);
             }
-
+            
             //Loads memory and calculate loading time penalty if not in Unlimited
             //Memory mode
             run_memory(&memory, mem_alloc, curr_process_list, cpu_clock);
 
+            //Set reference bit if using cm
+            if (strcmp(mem_alloc, MEM_CUSTOM) == 0)
+            {
+                set_reference_bits(&memory, 1, curr_process_list->pid);
+                // print_array(memory->reference_bit, memory->n_total_pages);
+            }
             print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
              memory->n_total_pages, curr_process_list);
         }
@@ -211,6 +224,12 @@ int main(int argc, char **argv)
                 //Memory mode
                 run_memory(&memory, mem_alloc, curr_process_list, cpu_clock);
 
+                //Set reference bit if using cm
+                if (strcmp(mem_alloc, MEM_CUSTOM) == 0)
+                {
+                    set_reference_bits(&memory, 1, curr_process_list->pid);
+                    // print_array(memory->reference_bit, memory->n_total_pages);
+                }
                 print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
                 memory->n_total_pages, curr_process_list);
             }
@@ -259,7 +278,12 @@ int main(int argc, char **argv)
                 //Loads memory and calculate loading time penalty if not in Unlimited
                 //Memory mode               
                 run_memory(&memory, mem_alloc, curr_process_list, cpu_clock);
-
+                //Set reference bit if using cm
+                if (strcmp(mem_alloc, MEM_CUSTOM) == 0)
+                {
+                    set_reference_bits(&memory, 1, curr_process_list->pid);
+                    // print_array(memory->reference_bit, memory->n_total_pages);
+                }
                 print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
                  memory->n_total_pages, curr_process_list);
             }
@@ -308,6 +332,21 @@ void run_memory(struct memory_t **memory, char *mem_alloc, struct process_t *cur
         memory_addr = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
         load_penalty = load_into_memory_v(memory, curr_process_list->pid, curr_process_list->memory_required, 
         memory_addr, &page_fault_penalty, cpu_clock);
+        curr_process_list->time_load_penalty = load_penalty;
+        curr_process_list->time_required += page_fault_penalty;
+        //Updates memory address if pages were not in memory already before suspension
+        if (load_penalty > 0)
+        {
+            curr_process_list->memory_address = memory_addr;
+        }
+    }
+    //Running on Custom memory mode
+    else if (strcmp(mem_alloc, MEM_CUSTOM) == 0)
+    {
+        memory_addr = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
+        load_penalty = load_into_memory_cm(memory, curr_process_list->pid, curr_process_list->memory_required, 
+        memory_addr, &page_fault_penalty, cpu_clock);
+        
         curr_process_list->time_load_penalty = load_penalty;
         curr_process_list->time_required += page_fault_penalty;
         //Updates memory address if pages were not in memory already before suspension
