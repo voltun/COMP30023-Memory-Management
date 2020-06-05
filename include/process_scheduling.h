@@ -22,6 +22,7 @@ typedef struct process_t
 
 //DEBUG
 void print_list(struct process_t *);
+void print_array(uint32_t *arr, uint32_t size);
 
 struct process_t *create_process(uint32_t, uint32_t, uint32_t, uint32_t);
 struct process_t *get_all_processes(FILE *);

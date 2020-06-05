@@ -11,7 +11,17 @@
 struct process_t *get_next_process(FILE *fptr);
 struct process_t *list_pop(struct process_t **);
 
-
+void print_array(uint32_t *arr, uint32_t size)
+{
+    for (uint32_t i = 0; i < size; i++)
+    {
+        if (arr[i] == UINT32_MAX)
+        {
+            return;
+        }
+        printf("ARRAY: %"PRIu32"\n", arr[i]);
+    }
+}
 
 void print_list(struct process_t *list)
 {

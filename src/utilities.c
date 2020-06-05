@@ -372,6 +372,12 @@ uint32_t *add_to_array_nodup(uint32_t *master, uint32_t *array, uint32_t size)
     uint32_t *new_list = create_uint32_array(size, UINT32_MAX);
     uint32_t count1 = 0, count2 = 0;
 
+    //Array empty
+    if (!array)
+    {
+        return master;
+    }
+
     for (uint32_t i = 0; i < size; i++)
     {
         if (master[count1] == UINT32_MAX && array[count2] == UINT32_MAX)
