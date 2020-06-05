@@ -181,7 +181,13 @@ int main(int argc, char **argv)
             print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
              memory->n_total_pages, curr_process_list);
         }
-          
+        
+        //There are still incoming processes in simulation but no currently running processes
+        if (incoming_processes && !curr_process_list)
+        {
+            cpu_clock += 1;
+            continue;
+        }
         //Checks if cpu_clock corresponds to a newly arrived process, adds to processing queue
         //if matches
         if (incoming_processes && has_process_arrived(cpu_clock, incoming_processes))
@@ -191,12 +197,6 @@ int main(int argc, char **argv)
                 struct process_t *popped_proc = list_pop(&incoming_processes);
                 curr_process_list = list_push(curr_process_list, popped_proc);
             }
-        }
-        //There are still incoming processes in simulation but no currently running processes
-        else if (incoming_processes && !curr_process_list)
-        {
-            cpu_clock += 1;
-            continue;
         }
         
         // printf("MASTER: \n");
