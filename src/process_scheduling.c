@@ -293,6 +293,71 @@ struct process_t *round_robin_shuffle(struct process_t *list, struct memory_t **
 }
 
 /*
+place process with shortest job times at the first index of running process queue
+@params
+list, struct process_t *, the running process list
+
+@return
+struct process_t *, the modified list
+*/
+struct process_t *sort_shortest_job(struct process_t *list)
+{
+    struct process_t *curr = list;
+    uint32_t small_job = UINT32_MAX;
+    struct process_t *new_list = NULL;
+
+    //For empty list
+    if (!list)
+    {
+        return NULL;
+    }
+    //For singleton list
+    if(list->next == NULL)
+    {
+        return list;
+    }
+
+    //find the shortest job time from process list
+    while (curr != NULL)
+    {
+        if (curr->job_time < small_job)
+        {
+            small_job = curr->job_time;
+        }
+        curr = curr->next;
+    }
+    curr = list;
+
+    //puts shortest job at the head
+    while (curr->next != NULL)
+    {
+        if (curr->next->job_time == small_job)
+        {
+            if (curr->next->next == NULL)
+            {
+                new_list = curr->next;
+                new_list->next = list;
+                curr->next = NULL;
+                break;
+            }
+            else
+            {
+                struct process_t *temp = NULL;
+
+                new_list = curr->next;
+                temp = curr->next->next;
+                new_list->next = list;
+                curr->next = temp;
+                break;
+            }
+        }
+        curr = curr->next;
+    }
+
+    return new_list;
+}
+
+/*
 Decrement time remaining for process to use CPU.
 @params
 cpu_clock, uint32_t, representation of CPU clock in Seconds

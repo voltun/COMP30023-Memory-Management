@@ -8,12 +8,14 @@
 
 #define SIZE_PER_MEM_PAGE 4
 #define LOADTIME_SWAPPING 2
+#define SIZE_VMEM_MIN_RUN 16
 
 uint32_t count_unused_mem(struct memory_t *memory);
 uint32_t *add_into_memory(struct memory_t **memory, uint32_t pid, uint32_t pages, uint32_t *mem_addr);
 uint32_t find_evictee_lru(struct memory_t *memory);
 void update_mem_usage(struct memory_t **memory);
 uint32_t has_been_loaded(struct memory_t *memory, uint32_t pid);
+uint32_t *evict_one_by_one(struct memory_t **memory, uint32_t pid);
 
 /*
 Initialises the memory_t struct, representation of main memory
@@ -115,6 +117,116 @@ uint32_t load_into_memory_p(struct memory_t **memory, uint32_t pid, uint32_t mem
     }
 
     return req_pages*LOADTIME_SWAPPING;
+}
+
+/*
+Loads the given process' memory pages into the main memory
+!! ASSUMES VIRTUAL MEMORY
+@params
+memory, struct memory_t **, pointer to the memory_t * to allow modification
+pid, uint32_t, Process ID of requesting process
+mem_size, uint32_t, size of memory to be allocated in KB    
+cpu_clock, uint32_t, representation of CPU clock in Seconds
+
+@return
+uint32_t, the time required to load given process' pages into memory, in Seconds
+*/
+uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem_size, uint32_t *mem_addr, uint32_t cpu_clock)
+{
+    uint32_t *final_evict_addr = NULL, *evicted_mem = NULL;
+    uint32_t min_exec_pages = SIZE_VMEM_MIN_RUN / SIZE_PER_MEM_PAGE;
+    uint32_t evictee = 0, loaded_pages = 0, n_loaded = 0;
+    uint32_t req_pages = mem_size / SIZE_PER_MEM_PAGE;
+    uint32_t free_space = count_unused_mem(*memory);
+
+    loaded_pages = has_been_loaded(*memory, pid);
+    //If the minimum required pages to run given process met, don't need to insert more
+    //OR if total number of pages required by process is less than minimum required and already
+    //in memory, return
+    if (loaded_pages >= min_exec_pages)
+    {
+        return 0;
+    }
+    if ((req_pages < min_exec_pages) && (loaded_pages >= req_pages))
+    {
+        return 0;
+    }
+
+    mem_addr = reinit_uint32_array(mem_addr, (*memory)->n_total_pages, UINT32_MAX);
+
+    //Loads all process pages into memory if available space
+    if (free_space >= req_pages)
+    {
+        n_loaded = req_pages - loaded_pages;
+    }
+    //Loads as much pages as possible if free space meets minimum execution pages
+    //but not enough free space to load all process pages
+    else if (free_space >= min_exec_pages)
+    {
+        n_loaded = free_space;
+    }
+    //Evicts some/all processes until minimum execution requirement
+    else
+    {
+        final_evict_addr = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
+        //Keep evicting until minimum execution pages met or process has enough to fit all if less
+        //memory needed
+        while (free_space < min_exec_pages && free_space < req_pages)
+        {
+            //Find pid of evictee, UINT32_MAX if none found
+            evictee = find_evictee_lru(*memory);
+
+            evicted_mem = evict_one_by_one(memory, evictee);
+            final_evict_addr = add_to_array_nodup(final_evict_addr, evicted_mem, (*memory)->n_total_pages);
+
+            free_space = count_unused_mem(*memory);
+        }
+
+        print_memory_evict(cpu_clock, final_evict_addr, (*memory)->n_total_pages);
+
+        if (req_pages < min_exec_pages)
+        {
+            n_loaded = req_pages;
+        }
+        else
+        {
+            n_loaded = min_exec_pages;
+        }
+    }
+    mem_addr = add_into_memory(memory, pid, n_loaded, mem_addr);
+
+    return n_loaded*LOADTIME_SWAPPING;
+}
+
+/*
+Evicts only one process memory page from the memory
+!! ASSUMES MEMORY HAS PAGES ALREADY LOADED
+@params
+memory, struct memory_t **, pointer to the memory_t * to allow modification
+pid, uint32_t, process id of evictee :(
+
+@return
+uint32_t *, memory space address freed, due to eviction
+*/
+uint32_t *evict_one_by_one(struct memory_t **memory, uint32_t pid)
+{
+    uint32_t *ret_pack = NULL;
+
+    //Start evicting process' pages from memory
+    for (uint32_t i = 0; i < (*memory)->n_total_pages; i++)
+    {
+        if ((*memory)->main_memory[i] == pid)
+        {
+            //Creates an array, with first element as address and rest as
+            //padding 
+            ret_pack = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
+            (*memory)->main_memory[i] = UINT32_MAX;
+            ret_pack[0] = i;
+            break;
+        }
+    }
+
+    return ret_pack;
 }
 
 /*
