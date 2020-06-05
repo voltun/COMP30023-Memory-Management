@@ -200,6 +200,18 @@ int main(int argc, char **argv)
         //if matches
         if (incoming_processes && has_process_arrived(cpu_clock, incoming_processes))
         {
+            //If there are no currently running processes but simulation is still ongoing
+            if (!curr_process_list)
+            {
+                curr_process_list = malloc(sizeof(struct process_t));
+            
+                if(!curr_process_list)
+                {
+                    fprintf(stderr, "Malloc failed!\n");
+                    exit(1);
+                }
+            }
+            
             while(incoming_processes && cpu_clock == incoming_processes->arrival_time)
             {
                 struct process_t *popped_proc = list_pop(&incoming_processes);
