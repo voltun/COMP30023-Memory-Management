@@ -120,12 +120,14 @@ Loads the given process' memory pages into the main memory
 memory, struct memory_t **, pointer to the memory_t * to allow modification
 pid, uint32_t, Process ID of requesting process
 mem_size, uint32_t, size of memory to be allocated in KB    
+page_fault, uint32_t *, pointer to time penalty offset for page faults in Seconds
 cpu_clock, uint32_t, representation of CPU clock in Seconds
 
 @return
 uint32_t, the time required to load given process' pages into memory, in Seconds
 */
-uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem_size, uint32_t *mem_addr, uint32_t cpu_clock)
+uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem_size,
+ uint32_t *mem_addr, uint32_t *fault, uint32_t cpu_clock)
 {
     uint32_t *final_evict_addr = NULL, *evicted_mem = NULL;
     uint32_t min_exec_pages = SIZE_VMEM_MIN_RUN / SIZE_PER_MEM_PAGE;
@@ -141,6 +143,11 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
     //in memory, return
     if (loaded_pages >= min_exec_pages)
     {
+        //Page faults
+        if (loaded_pages < req_pages)
+        {
+            *fault = 1;
+        }
         return 0;
     }
     if ((req_pages < min_exec_pages) && (loaded_pages >= req_pages))
@@ -148,6 +155,8 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
         return 0;
     }
 
+    *fault = 0;
+    
     mem_addr = reinit_uint32_array(mem_addr, (*memory)->n_total_pages, UINT32_MAX);
 
     //Loads all process pages into memory if available space

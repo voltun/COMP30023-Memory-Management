@@ -279,7 +279,7 @@ int main(int argc, char **argv)
 
 void run_memory(struct memory_t **memory, char *mem_alloc, struct process_t *curr_process_list, uint32_t cpu_clock)
 {
-    uint32_t load_penalty = 0;
+    uint32_t load_penalty = 0, page_fault_penalty = 0;
     uint32_t *memory_addr = NULL;
 
     //Running on Unlimited Memory
@@ -306,8 +306,9 @@ void run_memory(struct memory_t **memory, char *mem_alloc, struct process_t *cur
     {
         memory_addr = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
         load_penalty = load_into_memory_v(memory, curr_process_list->pid, curr_process_list->memory_required, 
-        memory_addr, cpu_clock);
+        memory_addr, &page_fault_penalty, cpu_clock);
         curr_process_list->time_load_penalty = load_penalty;
+        curr_process_list->time_required += page_fault_penalty;
         //Updates memory address if pages were not in memory already before suspension
         if (load_penalty > 0)
         {
