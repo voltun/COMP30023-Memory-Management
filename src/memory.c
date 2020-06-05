@@ -222,6 +222,25 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
 }
 
 /*
+Loads the given process' memory pages into the main memory
+!! ASSUMES SECOND CHANCE
+@params
+memory, struct memory_t **, pointer to the memory_t * to allow modification
+pid, uint32_t, Process ID of requesting process
+mem_size, uint32_t, size of memory to be allocated in KB    
+page_fault, uint32_t *, pointer to time penalty offset for page faults in Seconds
+cpu_clock, uint32_t, representation of CPU clock in Seconds
+
+@return
+uint32_t, the time required to load given process' pages into memory, in Seconds
+*/
+uint32_t load_into_memory_cm(struct memory_t **memory, uint32_t pid, uint32_t mem_size,
+ uint32_t *mem_addr, uint32_t *fault, uint32_t cpu_clock)
+{
+    return 0;
+}
+
+/*
 Evicts only one process memory page from the memory
 !! ASSUMES MEMORY HAS PAGES ALREADY LOADED
 @params
@@ -324,19 +343,28 @@ uint32_t, the process ID chosen to be evicted (UINT32_MAX IF NONE)
 */
 uint32_t find_evictee_lru(struct memory_t *memory)
 {
+    // uint32_t least_time = UINT32_MAX, pid = UINT32_MAX;
 
     for (uint32_t i = 0; i < memory->n_total_proc; i++)
     {
+        //Reach end of running processes list
         if (memory->pid_loaded[i] == UINT32_MAX)
         {   
-            // //singleton
-            // if (i == 0)
-            // {
-            //     return memory->pid_loaded[i];
-            // }
+            //singleton
+            if (i == 0)
+            {
+                return memory->pid_loaded[i];
+            }
             
             return memory->pid_loaded[i-1];
+            // break
         }
+        // //Find pid of process with least recently used time
+        // if (memory->pid_loaded[i]->time_last_used < least_time)
+        // {
+        //     least_time = memory->pid_loaded[i]->time_last_used;
+        //     pid = memory->pid_loaded[i];
+        // }
     }
     
     return UINT32_MAX;

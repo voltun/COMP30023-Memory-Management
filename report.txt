@@ -1,0 +1,14 @@
+The Custom Scheduling algorithm chosen was a Shortest-Job-First algorithm.
+Each process has its job time recorded on arrival, fits assumption of the algorithm.
+
+Optimal scenario: When multiple processes (i.e. 1 super short and 3 very long jobs) arrive at time X, more processes 
+(i.e. 4 super short jobs) arrive before the completion of the shortest process from time X.
+
+Bad scenario: When a very long process is being executed, many short processes arrive just after its execution. 
+
+The Custom Memory Management policy chosen was a Second-Chance algorithm.
+It is an improved FIFO policy. When a page fault occurs, a pointer traverse from start of page frame to the end, until it finds a
+page's Referenced bit is 0. A Referenced bit is set to 1 when a page was used by a running process. when the pointer traverses,
+it sets the page's 1 Referenced bit to 0, and continues. If all referenced bit was 1, evict first page, repeat.
+
+Optimal scenario: When page frame occupied by many low memory requirement processes, 

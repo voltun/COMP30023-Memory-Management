@@ -17,6 +17,7 @@ typedef struct memory_t
 struct memory_t *init_memory(uint32_t, uint32_t);
 uint32_t load_into_memory_p(struct memory_t **, uint32_t, uint32_t, uint32_t *, uint32_t);
 uint32_t load_into_memory_v(struct memory_t **, uint32_t, uint32_t, uint32_t *, uint32_t *, uint32_t);
+uint32_t load_into_memory_cm(struct memory_t **, uint32_t, uint32_t, uint32_t *, uint32_t *, uint32_t);
 uint32_t *evict_from_memory(struct memory_t **, uint32_t);
 
 #endif

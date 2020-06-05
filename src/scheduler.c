@@ -243,8 +243,8 @@ int main(int argc, char **argv)
             }
             else
             {
-                //Quantum offset from loading penalties
-                if (strcmp(mem_alloc, MEM_UNLIMITED) == 0)
+                //Quantum offset from loading penalties  
+                if (strcmp(mem_alloc, MEM_UNLIMITED) == 0 || curr_process_list->next == NULL)
                 {
                     quantum_clock = quantum - 1;
                 }
@@ -265,9 +265,10 @@ int main(int argc, char **argv)
             }
             // printf("quantum time: %d\n", quantum_clock);
         }
-        //Run process, and adds finished process for performance stats
+
+        //Run process
         fin_flag = execute_process(cpu_clock, &curr_process_list);
-        
+
         //Update clocks
         cpu_clock += 1;
     }
