@@ -214,7 +214,16 @@ int main(int argc, char **argv)
             }
             else
             {
-                quantum_clock = quantum - 1;
+                //Quantum offset from loading penalties
+                if (strcmp(mem_alloc, MEM_UNLIMITED) == 0)
+                {
+                    quantum_clock = quantum - 1;
+                }
+                else
+                {
+                    quantum_clock = quantum;
+                }
+                
                 curr_process_list = round_robin_shuffle(curr_process_list, &memory);
                 
                 
