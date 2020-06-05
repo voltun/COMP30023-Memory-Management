@@ -205,7 +205,7 @@ uint32_t *get_throughput(struct datalog_t *log, uint32_t cpu_clock)
 {
     uint32_t *ret_val = NULL;
     //Determine how many intervals the array should have
-    uint32_t size = (uint32_t) floor(cpu_clock / THROUGHPUT_INTERVAL);
+    uint32_t size = (uint32_t) ceil(cpu_clock / THROUGHPUT_INTERVAL);
     uint32_t *interval_list = create_uint32_array(size, 0);
     uint32_t index = 0;
     uint32_t sum = 0, smallest = UINT32_MAX, biggest = 0, avg = 0;
@@ -213,7 +213,7 @@ uint32_t *get_throughput(struct datalog_t *log, uint32_t cpu_clock)
     //Calculate number of processes for each interval
     for (struct process_t *curr = log->finished_process; curr != NULL; curr=curr->next)
     {
-        index = ((uint32_t) floor((curr->time_finished - 1) / THROUGHPUT_INTERVAL));
+        index = ((uint32_t) ceil((curr->time_finished - 1) / THROUGHPUT_INTERVAL));
         
         interval_list[index] += 1;
     }
@@ -238,7 +238,7 @@ uint32_t *get_throughput(struct datalog_t *log, uint32_t cpu_clock)
     }
 
     //Calculate average
-    avg = (uint32_t) ceil(sum / (size+1));
+    avg = (uint32_t) ceil(sum / size);
 
     //Package data for return
     ret_val = malloc(sizeof(uint32_t)*N_THROUGHPUT_METRIC);
