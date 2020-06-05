@@ -160,7 +160,7 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
     mem_addr = reinit_uint32_array(mem_addr, (*memory)->n_total_pages, UINT32_MAX);
 
     //Loads all process pages into memory if available space
-    if (free_space >= req_pages)
+    if (free_space >= (req_pages - loaded_pages))
     {
         n_loaded = req_pages - loaded_pages;
     }
@@ -178,7 +178,7 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
         final_evict_addr = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
         //Keep evicting until minimum execution pages met or process has enough to fit all if less
         //memory needed
-        while (free_space < min_exec_pages && free_space < req_pages)
+        while (free_space < min_exec_pages && free_space < (req_pages - loaded_pages))
         {
             //Finds new pid only after eviction has been done for a previous pid
             //and still not enough space
@@ -205,9 +205,9 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
 
         print_memory_evict(cpu_clock, final_evict_addr, (*memory)->n_total_pages);
 
-        if (req_pages < min_exec_pages)
+        if ((req_pages - loaded_pages) < min_exec_pages)
         {
-            n_loaded = req_pages;
+            n_loaded = req_pages - loaded_pages;
         }
         else
         {
