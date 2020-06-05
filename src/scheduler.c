@@ -207,13 +207,10 @@ int main(int argc, char **argv)
                 }
                 curr_process_list = list_pop(&incoming_processes);
             }
-            else
+            while(incoming_processes && cpu_clock == incoming_processes->arrival_time)
             {
-                while(incoming_processes && cpu_clock == incoming_processes->arrival_time)
-                {
-                    struct process_t *popped_proc = list_pop(&incoming_processes);
-                    curr_process_list = list_push(curr_process_list, popped_proc);
-                }
+                struct process_t *popped_proc = list_pop(&incoming_processes);
+                curr_process_list = list_push(curr_process_list, popped_proc);
             }
         }
 
