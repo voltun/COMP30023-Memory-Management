@@ -243,8 +243,6 @@ uint32_t *get_throughput(struct datalog_t *log, uint32_t cpu_clock)
         }
     }
 
-    printf("SUM: %"PRIu32"\n", sum);
-    printf("SIZE: %"PRIu32"\n", size);
     //Calculate average
     avg = (uint32_t) ceil(((double)sum) / ((double)size));
 
