@@ -134,6 +134,12 @@ int main(int argc, char **argv)
                 break;
             }
             
+            //There are still incoming processes in simulation but no currently running processes
+            if (incoming_processes && !curr_process_list)
+            {
+                cpu_clock += 1;
+                continue;
+            }
             //Use custom scheduling if set
             if ((strcmp(sched_algo, ALGO_CUSTOM) == 0))
             {
