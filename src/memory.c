@@ -132,7 +132,9 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
     uint32_t evictee = 0, loaded_pages = 0, n_loaded = 0;
     uint32_t req_pages = mem_size / SIZE_PER_MEM_PAGE;
     uint32_t free_space = count_unused_mem(*memory);
+    int cont_flag = 0;
 
+    
     loaded_pages = has_been_loaded(*memory, pid);
     //If the minimum required pages to run given process met, don't need to insert more
     //OR if total number of pages required by process is less than minimum required and already
@@ -167,10 +169,24 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
         //memory needed
         while (free_space < min_exec_pages && free_space < req_pages)
         {
-            //Find pid of evictee, UINT32_MAX if none found
-            evictee = find_evictee_lru(*memory);
-
+            //Finds new pid only after eviction has been done for a previous pid
+            //and still not enough space
+            if (!cont_flag)
+            {
+                //Find pid of evictee, UINT32_MAX if none found
+                evictee = find_evictee_lru(*memory);
+                cont_flag = 1;
+                // printf("%"PRIu32" ", evictee);    
+            }
+            
             evicted_mem = evict_one_by_one(memory, evictee);
+            // printf("%"PRIu32" ", evicted_mem);
+            //Did not evict any memory address means no more pages in memory
+            if (has_been_loaded(*memory, evictee) <= 0)
+            {
+                cont_flag = 0;
+                continue;
+            }
             final_evict_addr = add_to_array_nodup(final_evict_addr, evicted_mem, (*memory)->n_total_pages);
 
             free_space = count_unused_mem(*memory);
@@ -216,6 +232,19 @@ uint32_t *evict_one_by_one(struct memory_t **memory, uint32_t pid)
             ret_pack = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
             (*memory)->main_memory[i] = UINT32_MAX;
             ret_pack[0] = i;
+
+            if (has_been_loaded(*memory, pid) <= 0)
+            {
+                //Remove pid from book keeping
+                for (uint32_t i = 0; i < (*memory)->n_total_proc; i++)
+                {
+                    if ((*memory)->pid_loaded[i] == pid)
+                    {
+                        (*memory)->pid_loaded[i] = UINT32_MAX;
+                        break;
+                    }
+                }
+            }
             break;
         }
     }
@@ -276,7 +305,7 @@ Finds the process to evict based on least recently used algorithm
 memory, struct memory_t *, the memory representation
 
 @return
-uint32_t, the process ID chosen to be evicted
+uint32_t, the process ID chosen to be evicted (UINT32_MAX IF NONE)
 */
 uint32_t find_evictee_lru(struct memory_t *memory)
 {
@@ -285,17 +314,17 @@ uint32_t find_evictee_lru(struct memory_t *memory)
     {
         if (memory->pid_loaded[i] == UINT32_MAX)
         {   
-            //singleton
-            if (i == 0)
-            {
-                return UINT32_MAX;
-            }
+            // //singleton
+            // if (i == 0)
+            // {
+            //     return memory->pid_loaded[i];
+            // }
             
             return memory->pid_loaded[i-1];
         }
     }
     
-    return -1;
+    return UINT32_MAX;
 }
 
 /*

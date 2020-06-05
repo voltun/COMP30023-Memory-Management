@@ -100,12 +100,12 @@ int main(int argc, char **argv)
 
     //Init all processes into linked list for better simulation
     incoming_processes = get_all_processes(file);
-    print_list(incoming_processes);
+    // print_list(incoming_processes);
     
     //Start CPU simulation
     while(1)
     {
-        printf("CLOCK: %d\n", cpu_clock);
+        // printf("CLOCK: %d\n", cpu_clock);
 
         //If a process finished running, print RUNNING transcript now
         if (fin_flag && curr_process_list)
