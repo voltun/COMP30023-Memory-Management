@@ -147,9 +147,7 @@ int main(int argc, char **argv)
 
             //There are still incoming processes in simulation but no currently running processes
             if (incoming_processes && !curr_process_list)
-            {
-                // printf("WAITING\n");
-                cpu_clock += 1;
+            {            
                 continue;
             }
 
@@ -195,6 +193,7 @@ int main(int argc, char **argv)
         //if matches
         if (incoming_processes && has_process_arrived(cpu_clock, incoming_processes))
         {
+            
             //If there are no currently running processes but simulation is still ongoing
             if (!curr_process_list)
             {
@@ -206,14 +205,20 @@ int main(int argc, char **argv)
                     exit(1);
                 }
                 curr_process_list = list_pop(&incoming_processes);
+                //Loads memory and calculate loading time penalty if not in Unlimited
+                //Memory mode
+                run_memory(&memory, mem_alloc, curr_process_list, cpu_clock);
+
+                print_process_run(cpu_clock, mem_alloc, curr_process_list->time_load_penalty, memory->mem_usage,
+                memory->n_total_pages, curr_process_list);
             }
+            
             while(incoming_processes && cpu_clock == incoming_processes->arrival_time)
             {
                 struct process_t *popped_proc = list_pop(&incoming_processes);
                 curr_process_list = list_push(curr_process_list, popped_proc);
             }
         }
-
         //There are still incoming processes in simulation but no currently running processes
         if (incoming_processes && !curr_process_list)
         {
