@@ -110,6 +110,7 @@ uint32_t load_into_memory_p(struct memory_t **memory, uint32_t pid, uint32_t mem
         
     }
 
+
     return req_pages*LOADTIME_SWAPPING;
 }
 
@@ -155,8 +156,8 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
         return 0;
     }
 
-    *fault = 0;
-    
+    *fault = 1;
+
     mem_addr = reinit_uint32_array(mem_addr, (*memory)->n_total_pages, UINT32_MAX);
 
     //Loads all process pages into memory if available space
@@ -214,6 +215,8 @@ uint32_t load_into_memory_v(struct memory_t **memory, uint32_t pid, uint32_t mem
     }
     mem_addr = add_into_memory(memory, pid, n_loaded, mem_addr);
 
+    update_mem_usage(memory);
+
     return n_loaded*LOADTIME_SWAPPING;
 }
 
@@ -254,6 +257,7 @@ uint32_t *evict_one_by_one(struct memory_t **memory, uint32_t pid)
                     }
                 }
             }
+            update_mem_usage(memory);
             break;
         }
     }
@@ -303,6 +307,7 @@ uint32_t *evict_from_memory(struct memory_t **memory, uint32_t pid)
         }
     }
     
+    update_mem_usage(memory);
     // (*memory)->process_loaded = list_remove((*memory)->process_loaded, victim);
     return evicted_mem_addr;
 }
@@ -447,7 +452,8 @@ void update_mem_usage(struct memory_t **memory)
 
     free_space = (int) count_unused_mem(*memory);
     
-    usage = 100.0 - floor( (((float)free_space) / ((float)total)) * 100.0);
+    usage = ceil( ((float)(total - free_space)) / ((float)total) );
+    // usage = 100.0 - floor( (((float)free_space) / ((float)total)) * 100.0);
     
     (*memory)->mem_usage = usage;
 }
