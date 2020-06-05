@@ -81,8 +81,8 @@ uint32_t load_into_memory_p(struct memory_t **memory, uint32_t pid, uint32_t mem
 
     // process->memory_address = create_uint32_array((*memory)->n_total_pages, UINT32_MAX);
     
-    printf("LOADING PID: %"PRIu32"\n", pid);
-    printf("REQ PAGES: %"PRIu32", FREE PAGES: %"PRIu32"\n", req_pages, free_space);
+    // printf("LOADING PID: %"PRIu32"\n", pid);
+    // printf("REQ PAGES: %"PRIu32", FREE PAGES: %"PRIu32"\n", req_pages, free_space);
     //Loads process pages into memory if available space
     if (free_space >= req_pages)
     {

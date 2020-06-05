@@ -200,7 +200,7 @@ int main(int argc, char **argv)
         //Rearrange currently running processes based on scheduling algorithm
 
         //ROUND ROBIN SCHEDULING
-        if (strcmp(sched_algo, ALGO_ROUNDROBIN) == 0 && curr_process_list->time_load_penalty <= 0)
+        if (strcmp(sched_algo, ALGO_ROUNDROBIN) == 0 && curr_process_list->time_load_penalty < 0)
         {
             // printf("quantum time\n");
             //Update quantum time
